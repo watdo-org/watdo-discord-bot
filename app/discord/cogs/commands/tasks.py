@@ -21,7 +21,11 @@ class Tasks(BaseCog):
         """Show the summary of all your tasks."""
         tasks = await self.db.get_user_tasks(ctx.author.id)
         embed = Embed(self.bot, "TASKS SUMMARY")
-        embed.add_field(name="Total Tasks", value=len(tasks))
+        embed.add_field(name="Total", value=len(tasks))
+        embed.add_field(
+            name="Important",
+            value=sum(1 for t in tasks if t.is_important.value),
+        )
         await ctx.send(embed=embed)
 
     @dc.command()
