@@ -17,7 +17,7 @@ class Miscellaneous(BaseCog):
                 continue
 
             cmds = "\n".join(
-                f"{c.name} {self.bot.parse_params(c)}\n> {c.help}" for c in commands
+                f"{c.name} {self.parse_params(c)}\n> {c.help}" for c in commands
             )
             embed.add_field(name=cog.qualified_name, value=cmds)
 

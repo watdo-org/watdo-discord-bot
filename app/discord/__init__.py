@@ -38,29 +38,3 @@ class Bot(dc.Bot):
                     )
 
         await super().start(DISCORD_TOKEN)
-
-    @staticmethod
-    def parse_params(command: dc.Command) -> str:
-        params = []
-
-        for param in command.clean_params.values():
-            t = param.annotation
-
-            if t is bool:
-                t = "yes/no"
-
-            if t in (int, float):
-                t = "number"
-
-            t = f"*{t}*"
-            p = param.name if param.annotation is str else f"{param.name}: {t}"
-            p = p.replace("_", " ")
-
-            if param.required:
-                p = f"**[{p}]**"
-            else:
-                p = f"[{p}]"
-
-            params.append(p)
-
-        return " ".join(params)

@@ -23,3 +23,6 @@ class Database:
             tasks.append(Task(**data))
 
         return tasks
+
+    async def add_user_task(self, uid: str, task: Task) -> None:
+        await self._conn.lpush(uid, task.as_json_str())
