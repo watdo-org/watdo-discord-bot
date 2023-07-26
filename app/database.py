@@ -31,5 +31,19 @@ class Database:
 
         return tasks
 
+    async def get_user_task(self, uid: str, title: str) -> Optional[Task]:
+        tasks_data = await self._conn.lrange(uid, 0, -1)
+
+        for raw_data in tasks_data:
+            task = Task(**json.loads(raw_data))
+
+            if task.title.value == title:
+                return task
+
+        return None
+
     async def add_user_task(self, uid: str, task: Task) -> None:
         await self._conn.lpush(uid, task.as_json_str())
+
+    async def remove_user_task(self, uid: str, task: Task) -> None:
+        await self._conn.lrem(uid, 1, task.as_json_str())
