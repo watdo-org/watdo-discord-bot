@@ -74,9 +74,8 @@ class Tasks(BaseCog):
         paged_embed.send(ctx)
 
     @dc.command()
-    async def done(self, ctx: dc.Context, *title: str) -> None:
+    async def done(self, ctx: dc.Context, title: str) -> None:
         """Remove a task."""
-        title = " ".join(title)
         task = await self.db.get_user_task(ctx.author.id, title)
 
         if task is None:
@@ -84,7 +83,10 @@ class Tasks(BaseCog):
             return
 
         await self.db.remove_user_task(ctx.author.id, task)
-        await ctx.send(f'"{task.title.value}" done ✅')
+        await ctx.send(
+            f'"{task.title.value}" done ✅',
+            embed=self.create_task_embed(task),
+        )
 
 
 async def setup(bot: Bot) -> None:

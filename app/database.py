@@ -32,11 +32,7 @@ class Database:
         return tasks
 
     async def get_user_task(self, uid: str, title: str) -> Optional[Task]:
-        tasks_data = await self._conn.lrange(uid, 0, -1)
-
-        for raw_data in tasks_data:
-            task = Task(**json.loads(raw_data))
-
+        for task in await self.get_user_tasks(uid):
             if task.title.value == title:
                 return task
 
@@ -46,4 +42,4 @@ class Database:
         await self._conn.lpush(uid, task.as_json_str())
 
     async def remove_user_task(self, uid: str, task: Task) -> None:
-        await self._conn.lrem(uid, 1, task.as_json_str())
+        await self._conn.lrem(uid, 0, task.as_json_str())
