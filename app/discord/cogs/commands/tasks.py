@@ -7,6 +7,7 @@ from app.discord.embeds import Embed
 class Tasks(BaseCog):
     @dc.command()
     async def summary(self, ctx: dc.Context) -> None:
+        """Show the summary of all your tasks."""
         tasks = await self.db.get_user_tasks(ctx.author.id)
         embed = Embed(self.bot, "TASKS SUMMARY")
         embed.add_field(name="Total Tasks", value=len(tasks))

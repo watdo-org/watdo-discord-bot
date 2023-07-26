@@ -7,6 +7,7 @@ from app.discord.embeds import Embed
 class Miscellaneous(BaseCog):
     @dc.command()
     async def help(self, ctx: dc.Context) -> None:
+        """Show this help message."""
         embed = Embed(self.bot, "HELP")
 
         for cog in self.bot.cogs.values():
@@ -15,17 +16,16 @@ class Miscellaneous(BaseCog):
             if not commands:
                 continue
 
-            cmds = "\n".join(f"{c.name} {self.bot.parse_params(c)}" for c in commands)
-            embed.add_field(
-                name=cog.qualified_name,
-                value=f"{cog.description}\n{cmds}",
-                inline=False,
+            cmds = "\n".join(
+                f"{c.name} {self.bot.parse_params(c)}\n> {c.help}" for c in commands
             )
+            embed.add_field(name=cog.qualified_name, value=cmds)
 
         await ctx.send(embed=embed)
 
     @dc.command()
     async def ping(self, ctx: dc.Context) -> None:
+        """Show the server latency."""
         await ctx.send(f"Pong! **{round(self.bot.latency * 1000)}ms**")
 
 
