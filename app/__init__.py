@@ -1,5 +1,6 @@
 import asyncio
+from app.database import Database
 
 
 async def main(loop: asyncio.AbstractEventLoop) -> None:
-    print("Helo :3")
+    db = Database()

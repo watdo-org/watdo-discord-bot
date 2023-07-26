@@ -9,6 +9,7 @@ app = "python run.py"
 [packages]
 redis = "*"
 uvloop = "*"
+"discord.py" = "*"
 
 [dev-packages]
 
