@@ -1,5 +1,5 @@
 import json
-from typing import Any, List
+from typing import Any, List, Optional
 from redis.asyncio import Redis
 from app.models import Task
 from app.environ import REDISHOST, REDISPORT, REDISUSER, REDISPASSWORD
@@ -14,13 +14,20 @@ class Database:
             password=REDISPASSWORD,
         )
 
-    async def get_user_tasks(self, uid: str) -> List[Task]:
+    async def get_user_tasks(
+        self, uid: str, *, category: Optional[str] = None
+    ) -> List[Task]:
         tasks = []
         tasks_data = await self._conn.lrange(uid, 0, -1)
 
         for raw_data in tasks_data:
-            data = json.loads(raw_data)
-            tasks.append(Task(**data))
+            task = Task(**json.loads(raw_data))
+
+            if category is not None:
+                if task.category.value != category:
+                    continue
+
+            tasks.append(task)
 
         return tasks
 

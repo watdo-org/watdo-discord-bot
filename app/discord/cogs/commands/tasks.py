@@ -1,3 +1,4 @@
+import math
 from typing import Optional
 import dateparser
 from discord.ext import commands as dc
@@ -52,6 +53,29 @@ class Tasks(BaseCog):
         )
         await self.db.add_user_task(ctx.author.id, task)
         await ctx.send(embed=self.create_task_embed(task))
+
+    @dc.command()
+    async def do_priority(
+        self,
+        ctx: dc.Context,
+        limit: int = 5,
+        category: Optional[str] = None,
+    ) -> None:
+        """Show priority tasks."""
+        tasks = await self.db.get_user_tasks(ctx.author.id, category=category)
+        tasks.sort(key=lambda t: t.is_important.value, reverse=True)
+        tasks.sort(key=lambda t: t.due_seconds.value if t.due_seconds else math.inf)
+
+        embeds = []
+        for index, task in enumerate(tasks):
+            if index == limit:
+                break
+            embeds.append(self.create_task_embed(task))
+
+        if embeds:
+            await ctx.send(embeds=embeds)
+        else:
+            await ctx.send("No tasks.")
 
 
 async def setup(bot: Bot) -> None:

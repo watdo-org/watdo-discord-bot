@@ -48,6 +48,9 @@ class BaseCog(dc.Cog):
             if t in (int, float):
                 t = "number"
 
+            if "typing.Optional[" in str(t):
+                t = str(t).lstrip("typing.Optional[").rstrip("]")
+
             t = f"*{t}*"
             p = param.name if param.annotation is str else f"{param.name}: {t}"
             p = p.replace("_", " ")
