@@ -5,7 +5,7 @@ from discord.ext import commands as dc
 from app.models import Task
 from app.discord import Bot
 from app.discord.cogs import BaseCog
-from app.discord.embeds import Embed
+from app.discord.embeds import Embed, PagedEmbed
 
 
 class Tasks(BaseCog):
@@ -58,7 +58,6 @@ class Tasks(BaseCog):
     async def do_priority(
         self,
         ctx: dc.Context,
-        limit: int = 5,
         category: Optional[str] = None,
     ) -> None:
         """Show priority tasks."""
@@ -66,16 +65,13 @@ class Tasks(BaseCog):
         tasks.sort(key=lambda t: t.is_important.value, reverse=True)
         tasks.sort(key=lambda t: t.due_seconds.value if t.due_seconds else math.inf)
 
-        embeds = []
-        for index, task in enumerate(tasks):
-            if index == limit:
-                break
-            embeds.append(self.create_task_embed(task))
-
-        if embeds:
-            await ctx.send(embeds=embeds)
-        else:
+        if not tasks:
             await ctx.send("No tasks.")
+            return
+
+        paged_embed = PagedEmbed(self.bot)
+        paged_embed.add_pages(*(self.create_task_embed(t) for t in tasks))
+        paged_embed.send(ctx)
 
 
 async def setup(bot: Bot) -> None:
