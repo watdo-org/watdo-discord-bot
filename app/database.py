@@ -18,7 +18,7 @@ class Database:
         self, uid: str, *, category: Optional[str] = None
     ) -> List[Task]:
         tasks = []
-        tasks_data = await self._conn.lrange(uid, 0, -1)
+        tasks_data = await self._conn.lrange(f"tasks.{uid}", 0, -1)
 
         for raw_data in tasks_data:
             task = Task(**json.loads(raw_data))
@@ -39,7 +39,7 @@ class Database:
         return None
 
     async def add_user_task(self, uid: str, task: Task) -> None:
-        await self._conn.lpush(uid, task.as_json_str())
+        await self._conn.lpush(f"tasks.{uid}", task.as_json_str())
 
     async def remove_user_task(self, uid: str, task: Task) -> None:
-        await self._conn.lrem(uid, 1, task.as_json_str())
+        await self._conn.lrem(f"tasks.{uid}", 1, task.as_json_str())
