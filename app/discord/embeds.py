@@ -15,7 +15,7 @@ class PagedEmbed:
         self,
         bot: Bot,
         *,
-        timeout: float = 3600,
+        timeout: float = 300,
         controls: Optional[Dict[str, str]] = None,
     ) -> None:
         if controls is None:
@@ -85,15 +85,7 @@ class PagedEmbed:
                     continue
 
             except asyncio.TimeoutError:
-                # try to delete the message on timeout
-                try:
-                    await message.delete()
-                # except if the message is already deleted
-                except discord.errors.NotFound:
-                    pass
-                # whatever happens, break the loop
-                finally:
-                    break
+                break
 
             # ignore the reaction input if the reaction is from a bot
             if user.bot:
@@ -114,14 +106,15 @@ class PagedEmbed:
                 # go to the last page
                 self.current = len(self) - 1
             elif reaction == self.controls["extract"]:
-                await message.clear_reactions()
-                await message.edit(embeds=self.pages)
+                ctx.bot.loop.create_task(message.edit(embeds=self.pages))
                 break
             elif reaction in self._custom_buttons:
                 await self._custom_buttons[reaction](self.pages[self.current])
 
+            ctx.bot.loop.create_task(message.edit(embed=self.pages[self.current]))
             await message.remove_reaction(reaction, user)
-            await message.edit(embed=self.pages[self.current])
+
+        ctx.bot.loop.create_task(message.clear_reactions())
 
     def add_button(
         self, reaction: str, function: Callable[[Embed], Awaitable[None]]

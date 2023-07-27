@@ -94,11 +94,14 @@ class Tasks(BaseCog):
             await ctx.send(f'"{title}" not found ❌')
             return
 
-        await self.db.remove_user_task(ctx.author.id, task)
-        await ctx.send(
-            f'"{task.title.value}" done ✅',
-            embed=self.create_task_embed(task),
-        )
+        message = await ctx.send("Are you sure?", embed=self.create_task_embed(task))
+        confirm_remove = await self.wait_for_confirmation(ctx, message)
+
+        if confirm_remove:
+            await self.db.remove_user_task(ctx.author.id, task)
+            await message.edit(content="Done ✅")
+        else:
+            await message.edit(content="Cancelled ❌")
 
 
 async def setup(bot: Bot) -> None:

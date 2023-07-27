@@ -1,3 +1,5 @@
+import asyncio
+import discord
 from discord.ext import commands as dc
 from app.discord import Bot
 from app.database import Database
@@ -7,33 +9,6 @@ class BaseCog(dc.Cog):
     def __init__(self, bot: Bot, database: Database) -> None:
         self.bot = bot
         self.db = database
-
-    # async def interview(
-    #     self,
-    #     ctx: dc.Context,
-    #     *,
-    #     questions: Dict[str, InitLaterCallback[Any]],
-    # ) -> List[Any]:
-    #     def check(m: discord.Message) -> bool:
-    #         if m.channel.id == ctx.channel.id:
-    #             if m.author.id == ctx.author.id:
-    #                 return True
-
-    #         return False
-
-    #     answers = []
-    #     keys = list(questions.keys())
-    #     bot_msg = await ctx.reply(keys[0])
-
-    #     for index, q in enumerate(keys):
-    #         if index != 0:
-    #             await bot_msg.edit(content=q)
-
-    #         msg = await self.bot.wait_for("message", check=check)
-    #         answer = questions[q](msg.content)
-    #         answers.append(answer)
-
-    #     return answers
 
     @staticmethod
     def parse_params(command: dc.Command) -> str:
@@ -63,3 +38,34 @@ class BaseCog(dc.Cog):
             params.append(p)
 
         return " ".join(params)
+
+    async def wait_for_confirmation(
+        self, ctx: dc.Context, message: discord.Message
+    ) -> bool:
+        buttons = ("✅", "❌")
+
+        def check(reaction: discord.Reaction, user: discord.User) -> bool:
+            if user.id == ctx.author.id:
+                if reaction.message.id == message.id:
+                    if str(reaction) in buttons:
+                        return True
+
+            return False
+
+        for button in buttons:
+            self.bot.loop.create_task(message.add_reaction(button))
+
+        try:
+            reaction, user = await self.bot.wait_for(
+                "reaction_add", check=check, timeout=60
+            )
+            reaction = str(reaction)
+        except asyncio.TimeoutError:
+            return False
+        finally:
+            self.bot.loop.create_task(message.clear_reactions())
+
+        if reaction == buttons[0]:
+            return True
+
+        return False
