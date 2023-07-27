@@ -12,6 +12,7 @@ uvloop = "*"
 "discord.py" = "*"
 dateparser = "*"
 recurrent = "*"
+humanize = "*"
 
 [dev-packages]
 

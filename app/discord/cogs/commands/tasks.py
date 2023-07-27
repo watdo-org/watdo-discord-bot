@@ -1,6 +1,8 @@
 import math
+import time
 import datetime as dt
 from typing import Optional
+import humanize
 import recurrent
 import dateparser
 from discord.ext import commands as dc
@@ -16,6 +18,11 @@ class Tasks(BaseCog):
         embed.add_field(name="Category", value=task.category.value)
         embed.add_field(
             name="Important", value="Yes" if task.is_important.value else "No"
+        )
+        embed.add_field(
+            name="Created",
+            value=f"{humanize.naturaldate(task.date_created).capitalize()} "
+            f"({humanize.naturaltime(task.date_created)})",
         )
         return embed
 
@@ -62,6 +69,7 @@ class Tasks(BaseCog):
             category=category,
             is_important=is_important,
             due=self._parse_due(due) if due else None,
+            created_at=time.time(),
         )
         await self.db.add_user_task(ctx.author.id, task)
         await ctx.send(embed=self.create_task_embed(task))

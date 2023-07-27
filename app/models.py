@@ -8,7 +8,9 @@ from app.safe_data import SafeData, String, Boolean, Number
 
 
 class Model(ABC):
-    def __init__(self) -> None:
+    def __init__(self, *, created_at: float) -> None:
+        self.created_at = Number(created_at, min_val=0, max_val=math.inf)
+
         for key, value in self.__dict__.items():
             if value is None:
                 continue
@@ -31,6 +33,10 @@ class Model(ABC):
     def as_json_str(self, *, indent: Optional[int] = None) -> str:
         return json.dumps(self.as_json(), indent=indent)
 
+    @property
+    def date_created(self) -> dt.datetime:
+        return dt.datetime.fromtimestamp(self.created_at.value)
+
 
 class Task(Model):
     def __init__(
@@ -40,6 +46,7 @@ class Task(Model):
         category: str,
         is_important: bool,
         due: Optional[float | str],
+        created_at: float,
     ) -> None:
         self.title = String(title, min_len=1, max_len=1000)
         self.category = String(category, min_len=0, max_len=100)
@@ -53,7 +60,7 @@ class Task(Model):
         elif isinstance(due, str):
             self.due = String(due, min_len=7, max_len=math.inf)
 
-        super().__init__()
+        super().__init__(created_at=created_at)
 
     @property
     def due_date(self) -> Optional[dt.datetime]:
