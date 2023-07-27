@@ -20,13 +20,20 @@ class Database:
             yield key.decode()
 
     async def get_user_tasks(
-        self, uid: str, *, category: Optional[str] = None
+        self,
+        uid: str,
+        *,
+        category: Optional[str] = None,
+        ignore_done: bool = False,
     ) -> List[Task]:
         tasks = []
         tasks_data = await self._cache.lrange(f"tasks.{uid}")
 
         for raw_data in tasks_data:
             task = Task(**json.loads(raw_data))
+
+            if ignore_done and task.is_done:
+                continue
 
             if category is not None:
                 if task.category.value != category:

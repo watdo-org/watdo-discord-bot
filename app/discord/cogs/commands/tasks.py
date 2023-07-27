@@ -77,7 +77,11 @@ class Tasks(BaseCog):
         category: Optional[str] = None,
     ) -> None:
         """Show priority tasks."""
-        tasks = await self.db.get_user_tasks(ctx.author.id, category=category)
+        tasks = await self.db.get_user_tasks(
+            ctx.author.id,
+            category=category,
+            ignore_done=True,
+        )
         tasks.sort(key=lambda t: t.is_important.value, reverse=True)
         tasks.sort(key=lambda t: t.due_date.timestamp() if t.due_date else math.inf)
 
