@@ -17,15 +17,30 @@ from app.discord.embeds import Embed, PagedEmbed
 class Tasks(BaseCog):
     def create_task_embed(self, task: Task) -> Embed:
         embed = Embed(self.bot, task.title.value, timestamp=task.due_date)
-        embed.add_field(name="Category", value=task.category.value)
-        embed.add_field(
-            name="Important", value="Yes" if task.is_important.value else "No"
+        author = "📝"
+
+        if task.is_recurring:
+            author = "🔁"
+        elif task.due_date:
+            author = "🔔"
+
+        embed.set_author(
+            name=f"{'📌 ' if task.is_important.value else ''}"
+            f"{author} {task.category.value}"
         )
         embed.add_field(
             name="Created",
             value=f"{humanize.naturaldate(task.date_created).capitalize()} "
             f"({humanize.naturaltime(task.date_created)})",
         )
+
+        if task.last_done is not None:
+            embed.add_field(
+                name="Last Done",
+                value=f"{humanize.naturaldate(task.last_done_date).capitalize()} "
+                f"({humanize.naturaltime(task.last_done_date)})",
+            )
+
         return embed
 
     @dc.command()
