@@ -1,3 +1,4 @@
+import math
 import datetime as dt
 from typing import Optional
 import recurrent
@@ -74,8 +75,7 @@ class Tasks(BaseCog):
         """Show priority tasks."""
         tasks = await self.db.get_user_tasks(ctx.author.id, category=category)
         tasks.sort(key=lambda t: t.is_important.value, reverse=True)
-        # TODO: FIX
-        # tasks.sort(key=lambda t: t.due_date if t.due else math.inf)
+        tasks.sort(key=lambda t: t.due_date.timestamp() if t.due_date else math.inf)
 
         if not tasks:
             await ctx.send("No tasks.")
