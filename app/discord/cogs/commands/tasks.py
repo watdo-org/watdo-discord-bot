@@ -1,5 +1,6 @@
-import math
+import datetime as dt
 from typing import Optional
+import recurrent
 import dateparser
 from discord.ext import commands as dc
 from app.models import Task
@@ -29,6 +30,22 @@ class Tasks(BaseCog):
         )
         await ctx.send(embed=embed)
 
+    def _parse_due(self, due: str) -> Optional[float | str]:
+        date = dateparser.parse(due)
+
+        if date is not None:
+            return date.timestamp()
+
+        rr: Optional[str | dt.datetime] = recurrent.parse(due)
+
+        if isinstance(rr, str):
+            return rr
+
+        if isinstance(rr, dt.datetime):
+            return rr.timestamp()
+
+        return None
+
     @dc.command()
     async def todo(
         self,
@@ -39,17 +56,11 @@ class Tasks(BaseCog):
         due: Optional[str] = None,
     ) -> None:
         """Add a task to do."""
-        due_seconds = None
-
-        if due is not None:
-            date = dateparser.parse(due)
-            due_seconds = date.timestamp() if date else None
-
         task = Task(
             title=title,
             category=category,
             is_important=is_important,
-            due_seconds=due_seconds,
+            due=self._parse_due(due) if due else None,
         )
         await self.db.add_user_task(ctx.author.id, task)
         await ctx.send(embed=self.create_task_embed(task))
@@ -63,7 +74,8 @@ class Tasks(BaseCog):
         """Show priority tasks."""
         tasks = await self.db.get_user_tasks(ctx.author.id, category=category)
         tasks.sort(key=lambda t: t.is_important.value, reverse=True)
-        tasks.sort(key=lambda t: t.due_seconds.value if t.due_seconds else math.inf)
+        # TODO: FIX
+        # tasks.sort(key=lambda t: t.due_date if t.due else math.inf)
 
         if not tasks:
             await ctx.send("No tasks.")

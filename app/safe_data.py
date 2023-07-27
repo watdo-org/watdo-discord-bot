@@ -18,7 +18,7 @@ class SafeData(ABC, Generic[T]):
 
 
 class String(SafeData[str]):
-    def __init__(self, value: str, *, min_len: int, max_len: int) -> None:
+    def __init__(self, value: str, *, min_len: int, max_len: float) -> None:
         self.min_len = min_len
         self.max_len = max_len
         super().__init__(str, value)

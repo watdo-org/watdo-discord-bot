@@ -42,4 +42,4 @@ class Database:
         await self._conn.lpush(uid, task.as_json_str())
 
     async def remove_user_task(self, uid: str, task: Task) -> None:
-        await self._conn.lrem(uid, 0, task.as_json_str())
+        await self._conn.lrem(uid, 1, task.as_json_str())
