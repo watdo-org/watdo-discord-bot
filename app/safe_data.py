@@ -51,3 +51,8 @@ class Number(SafeData[float]):
             return False
 
         return True
+
+
+class Timestamp(Number):
+    def __init__(self, value: float) -> None:
+        super().__init__(value, min_val=0, max_val=9999999999)

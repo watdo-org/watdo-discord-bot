@@ -2,47 +2,18 @@ import math
 import time
 import datetime as dt
 from typing import Optional, Tuple
-import humanize
 import recurrent
 import dateparser
 import discord
 from discord.ext import commands as dc
 from app.models import Task
 from app.discord import Bot
-from app.safe_data import Number
+from app.safe_data import Timestamp
 from app.discord.cogs import BaseCog
-from app.discord.embeds import Embed, PagedEmbed
+from app.discord.embeds import Embed, TaskEmbed, PagedEmbed
 
 
 class Tasks(BaseCog):
-    def create_task_embed(self, task: Task) -> Embed:
-        embed = Embed(self.bot, task.title.value, timestamp=task.due_date)
-        author = "📝"
-
-        if task.is_recurring:
-            author = "🔁"
-        elif task.due_date:
-            author = "🔔"
-
-        embed.set_author(
-            name=f"{'📌 ' if task.is_important.value else ''}"
-            f"{author} {task.category.value}"
-        )
-        embed.add_field(
-            name="Created",
-            value=f"{humanize.naturaldate(task.date_created).capitalize()} "
-            f"({humanize.naturaltime(task.date_created)})",
-        )
-
-        if task.last_done is not None:
-            embed.add_field(
-                name="Last Done",
-                value=f"{humanize.naturaldate(task.last_done_date).capitalize()} "
-                f"({humanize.naturaltime(task.last_done_date)})",
-            )
-
-        return embed
-
     @dc.command()
     async def summary(self, ctx: dc.Context) -> None:
         """Show the summary of all your tasks."""
@@ -64,6 +35,10 @@ class Tasks(BaseCog):
         rr: Optional[str | dt.datetime] = recurrent.parse(due)
 
         if isinstance(rr, str):
+            if "DTSTART:" not in rr:
+                d = dt.datetime.now().strftime("%Y%m%d")
+                rr = f"DTSTART:{d}\n{rr}"
+
             return rr
 
         if isinstance(rr, dt.datetime):
@@ -86,11 +61,14 @@ class Tasks(BaseCog):
             category=category,
             is_important=is_important,
             due=self._parse_due(due) if due else None,
-            last_done=None,
             created_at=time.time(),
         )
+
+        if task.due_date:
+            task.next_reminder = Timestamp(task.due_date.timestamp())
+
         await self.db.add_user_task(ctx.author.id, task)
-        await ctx.send(embed=self.create_task_embed(task))
+        await ctx.send(embed=TaskEmbed(self.bot, task))
 
     @dc.command()
     async def do_priority(
@@ -108,7 +86,7 @@ class Tasks(BaseCog):
             return
 
         paged_embed = PagedEmbed(self.bot)
-        paged_embed.add_pages(*(self.create_task_embed(t) for t in tasks))
+        paged_embed.add_pages(*(TaskEmbed(self.bot, t) for t in tasks))
         paged_embed.send(ctx)
 
     async def _confirm_task_action(
@@ -120,7 +98,7 @@ class Tasks(BaseCog):
             await ctx.send(f'"{title}" not found ❌')
             return None, None, None
 
-        message = await ctx.send("Are you sure?", embed=self.create_task_embed(task))
+        message = await ctx.send("Are you sure?", embed=TaskEmbed(self.bot, task))
         is_confirm = await self.wait_for_confirmation(ctx, message)
 
         if is_confirm:
@@ -135,7 +113,7 @@ class Tasks(BaseCog):
 
         if (message is not None) and (task_index is not None) and (task is not None):
             if task.is_recurring:
-                task.last_done = Number(time.time(), min_val=0, max_val=math.inf)
+                task.last_done = Timestamp(time.time())
                 await self.db.set_user_task(ctx.author.id, task_index, task)
             else:
                 await self.db.remove_user_task(ctx.author.id, task)

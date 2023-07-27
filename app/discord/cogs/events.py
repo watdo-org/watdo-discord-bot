@@ -2,11 +2,13 @@ from discord.ext import commands as dc
 from app.discord import Bot
 from app.discord.cogs import BaseCog
 from app.logging import get_logger
+from app.reminder import Reminder
 
 
 class Events(BaseCog):
     @dc.Cog.listener()
     async def on_ready(self) -> None:
+        Reminder(self.bot.loop, self.db, self.bot).start()
         get_logger("Events.on_ready").info("Bot is ready.")
 
     @dc.Cog.listener()

@@ -22,9 +22,7 @@ def excepthook(
 ) -> None:
     try:
         _LOGGERS["excepthook"].critical(
-            repr(exc_value),
-            exc_info=exc_value,
-            stack_info=exc_traceback,
+            repr(exc_value), exc_info=exc_value, stack_info=True
         )
     except Exception:
         sys.__excepthook__(exc_type, exc_value or exc_type(None), exc_traceback)

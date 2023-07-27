@@ -1,13 +1,43 @@
 import asyncio
 from typing import Any, Dict, Optional, List, Awaitable, Callable, Iterator
+import humanize
 import discord
 from discord.ext import commands as dc
 from app.discord import Bot
+from app.models import Task
 
 
 class Embed(discord.Embed):
     def __init__(self, bot: Bot, title: str, **kwargs: Any) -> None:
         super().__init__(title=title, color=bot.color, **kwargs)
+
+
+class TaskEmbed(Embed):
+    def __init__(self, bot: Bot, task: Task) -> None:
+        super().__init__(bot, task.title.value, timestamp=task.due_date)
+        author = "📝"
+
+        if task.is_recurring:
+            author = "🔁"
+        elif task.due_date:
+            author = "🔔"
+
+        self.set_author(
+            name=f"{'📌 ' if task.is_important.value else ''}"
+            f"{author} {task.category.value}"
+        )
+        self.add_field(
+            name="Created",
+            value=f"{humanize.naturaldate(task.date_created).capitalize()} "
+            f"({humanize.naturaltime(task.date_created)})",
+        )
+
+        if task.last_done is not None:
+            self.add_field(
+                name="Last Done",
+                value=f"{humanize.naturaldate(task.last_done_date).capitalize()} "
+                f"({humanize.naturaltime(task.last_done_date)})",
+            )
 
 
 class PagedEmbed:

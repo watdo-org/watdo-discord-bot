@@ -4,14 +4,17 @@ from abc import ABC
 import datetime as dt
 from typing import Dict, Any, Optional
 from dateutil import rrule
-from app.safe_data import SafeData, String, Boolean, Number
+from app.safe_data import SafeData, String, Boolean, Timestamp
 
 
 class Model(ABC):
     def __init__(self, *, created_at: float) -> None:
-        self.created_at = Number(created_at, min_val=0, max_val=math.inf)
+        self.created_at = Timestamp(created_at)
 
         for key, value in self.__dict__.items():
+            if key.startswith("_"):
+                continue
+
             if value is None:
                 continue
 
@@ -23,6 +26,9 @@ class Model(ABC):
         res: Dict[str, Any] = {}
 
         for key, value in self.__dict__.items():
+            if key.startswith("_"):
+                continue
+
             if value is None:
                 res[key] = value
             else:
@@ -46,25 +52,33 @@ class Task(Model):
         category: str,
         is_important: bool,
         due: Optional[float | str],
-        last_done: Optional[float],
+        last_done: Optional[float] = None,
+        next_reminder: Optional[float] = None,
         created_at: float,
     ) -> None:
         self.title = String(title, min_len=1, max_len=1000)
         self.category = String(category, min_len=0, max_len=100)
         self.is_important = Boolean(is_important)
-        self.due: Optional[Number | String]
-        self.last_done = (
-            Number(last_done, min_val=0, max_val=math.inf) if last_done else None
-        )
+        self.due: Optional[Timestamp | String]
+        self.last_done = Timestamp(last_done) if last_done else None
+        self.next_reminder = Timestamp(next_reminder) if next_reminder else None
 
         if due is None:
             self.due = None
         elif isinstance(due, float):
-            self.due = Number(due, min_val=0, max_val=math.inf)
+            self.due = Timestamp(due)
         elif isinstance(due, str):
             self.due = String(due, min_len=7, max_len=math.inf)
+            self._rrule = rrule.rrulestr(due)
 
         super().__init__(created_at=created_at)
+
+    @property
+    def rrule(self) -> rrule.rrule:
+        if isinstance(self._rrule, rrule.rrule):
+            return self._rrule
+
+        raise TypeError(self._rrule)
 
     @property
     def due_date(self) -> Optional[dt.datetime]:
@@ -76,7 +90,7 @@ class Task(Model):
         if isinstance(due, float):
             return dt.datetime.fromtimestamp(due)
 
-        return rrule.rrulestr(due).after(dt.datetime.now())
+        return self._rrule.after(self.last_done_date or self.date_created)
 
     @property
     def last_done_date(self) -> Optional[dt.datetime]:
