@@ -1,5 +1,5 @@
 import json
-from typing import Any, List, Optional, Dict, AsyncIterator
+from typing import Any, List, Optional, Dict, AsyncIterator, Tuple
 from redis.asyncio import Redis
 from app.models import Task
 from app.environ import REDISHOST, REDISPORT, REDISUSER, REDISPASSWORD
@@ -36,15 +36,20 @@ class Database:
 
         return tasks
 
-    async def get_user_task(self, uid: str, title: str) -> Optional[Task]:
-        for task in await self.get_user_tasks(uid):
+    async def get_user_task(
+        self, uid: str, title: str
+    ) -> Tuple[Optional[int], Optional[Task]]:
+        for index, task in enumerate(await self.get_user_tasks(uid)):
             if task.title.value == title:
-                return task
+                return index, task
 
-        return None
+        return None, None
 
     async def add_user_task(self, uid: str, task: Task) -> None:
         await self._cache.lpush(f"tasks.{uid}", task.as_json_str())
+
+    async def set_user_task(self, uid: str, index: int, task: Task) -> None:
+        await self._cache.lset(f"tasks.{uid}", index, task.as_json_str())
 
     async def remove_user_task(self, uid: str, task: Task) -> None:
         await self._cache.lrem(f"tasks.{uid}", task.as_json_str())
@@ -66,14 +71,18 @@ class DatabaseCache:
         self._cache[key] = data
         return data
 
-    async def lpush(self, key: str, value: Any) -> None:
+    async def lpush(self, key: str, value: str) -> None:
         await self.db._connection.lpush(key, value)
 
         try:
-            self._cache[key].append(value)
+            self._cache[key].insert(0, value)
         except KeyError:
             await self.lrange(key, from_cache=False)
 
-    async def lrem(self, key: str, value: Any) -> None:
+    async def lrem(self, key: str, value: str) -> None:
         await self.db._connection.lrem(key, 1, value)
         self._cache[key].remove(value)
+
+    async def lset(self, key: str, index: int, value: str) -> None:
+        await self.db._connection.lset(key, index, value)
+        self._cache[key][index] = value

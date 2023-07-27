@@ -1,13 +1,15 @@
 import math
 import time
 import datetime as dt
-from typing import Optional
+from typing import Optional, Tuple
 import humanize
 import recurrent
 import dateparser
+import discord
 from discord.ext import commands as dc
 from app.models import Task
 from app.discord import Bot
+from app.safe_data import Number
 from app.discord.cogs import BaseCog
 from app.discord.embeds import Embed, PagedEmbed
 
@@ -69,6 +71,7 @@ class Tasks(BaseCog):
             category=category,
             is_important=is_important,
             due=self._parse_due(due) if due else None,
+            last_done=None,
             created_at=time.time(),
         )
         await self.db.add_user_task(ctx.author.id, task)
@@ -93,35 +96,43 @@ class Tasks(BaseCog):
         paged_embed.add_pages(*(self.create_task_embed(t) for t in tasks))
         paged_embed.send(ctx)
 
-    @dc.command()
-    async def done(self, ctx: dc.Context, title: str) -> None:
-        """Remove a task."""
-        task = await self.db.get_user_task(ctx.author.id, title)
+    async def _confirm_task_action(
+        self, ctx: dc.Context, title: str
+    ) -> Tuple[Optional[discord.Message], Optional[int], Optional[Task]]:
+        index, task = await self.db.get_user_task(ctx.author.id, title)
 
         if task is None:
             await ctx.send(f'"{title}" not found ❌')
-            return
+            return None, None, None
 
         message = await ctx.send("Are you sure?", embed=self.create_task_embed(task))
-        confirm_remove = await self.wait_for_confirmation(ctx, message)
+        is_confirm = await self.wait_for_confirmation(ctx, message)
 
-        if confirm_remove:
-            await self.db.remove_user_task(ctx.author.id, task)
+        if is_confirm:
+            return message, index, task
+
+        return None, None, None
+
+    @dc.command()
+    async def done(self, ctx: dc.Context, title: str) -> None:
+        """Remove a task."""
+        message, task_index, task = await self._confirm_task_action(ctx, title)
+
+        if (message is not None) and (task_index is not None) and (task is not None):
+            if task.is_recurring:
+                task.last_done = Number(time.time(), min_val=0, max_val=math.inf)
+                await self.db.set_user_task(ctx.author.id, task_index, task)
+            else:
+                await self.db.remove_user_task(ctx.author.id, task)
+
             await message.edit(content="Done ✅")
 
     @dc.command()
     async def cancel(self, ctx: dc.Context, title: str) -> None:
         """Cancel a task."""
-        task = await self.db.get_user_task(ctx.author.id, title)
+        message, task_index, task = await self._confirm_task_action(ctx, title)
 
-        if task is None:
-            await ctx.send(f'"{title}" not found ❌')
-            return
-
-        message = await ctx.send("Are you sure?", embed=self.create_task_embed(task))
-        confirm_remove = await self.wait_for_confirmation(ctx, message)
-
-        if confirm_remove:
+        if message is not None and task is not None:
             await self.db.remove_user_task(ctx.author.id, task)
             await message.edit(content="Cancelled ✅")
 

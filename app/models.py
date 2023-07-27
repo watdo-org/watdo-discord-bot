@@ -46,12 +46,16 @@ class Task(Model):
         category: str,
         is_important: bool,
         due: Optional[float | str],
+        last_done: Optional[float],
         created_at: float,
     ) -> None:
         self.title = String(title, min_len=1, max_len=1000)
         self.category = String(category, min_len=0, max_len=100)
         self.is_important = Boolean(is_important)
         self.due: Optional[Number | String]
+        self.last_done = (
+            Number(last_done, min_val=0, max_val=math.inf) if last_done else None
+        )
 
         if due is None:
             self.due = None
@@ -73,3 +77,17 @@ class Task(Model):
             return dt.datetime.fromtimestamp(due)
 
         return rrule.rrulestr(due).after(dt.datetime.now())
+
+    @property
+    def last_done_date(self) -> Optional[dt.datetime]:
+        if self.last_done is None:
+            return None
+
+        return dt.datetime.fromtimestamp(self.last_done.value)
+
+    @property
+    def is_recurring(self) -> bool:
+        if self.due is None:
+            return False
+
+        return isinstance(self.due.value, str)
