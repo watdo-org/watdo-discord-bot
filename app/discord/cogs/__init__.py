@@ -62,8 +62,6 @@ class BaseCog(dc.Cog):
             reaction = str(reaction)
         except asyncio.TimeoutError:
             return False
-        finally:
-            self.bot.loop.create_task(message.clear_reactions())
 
         if reaction == buttons[0]:
             return True

@@ -146,9 +146,6 @@ class PagedEmbed:
                 await self._custom_buttons[reaction](self.pages[self.current])
 
             ctx.bot.loop.create_task(message.edit(embed=self.pages[self.current]))
-            await message.remove_reaction(reaction, user)
-
-        ctx.bot.loop.create_task(message.clear_reactions())
 
     def add_button(
         self, reaction: str, function: Callable[[Embed], Awaitable[None]]
