@@ -112,10 +112,10 @@ class Tasks(BaseCog):
         message, task_index, task = await self._confirm_task_action(ctx, title)
 
         if (message is not None) and (task_index is not None) and (task is not None):
-            if task.is_recurring:
-                task.last_done = Timestamp(time.time())
-                await self.db.set_user_task(ctx.author.id, task_index, task)
-            else:
+            task.last_done = Timestamp(time.time())
+            await self.db.set_user_task(ctx.author.id, task_index, task)
+
+            if not task.is_recurring:
                 await self.db.remove_user_task(ctx.author.id, task)
 
             await message.edit(content="Done ✅")

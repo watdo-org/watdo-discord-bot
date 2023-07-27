@@ -24,7 +24,11 @@ class TaskEmbed(Embed):
 
         self.set_author(
             name=f"{'📌 ' if task.is_important.value else ''}"
-            f"{author} {task.category.value}"
+            f"{author} {task.category.value}",
+            icon_url="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3b/"
+            "Eo_circle_green_checkmark.svg/800px-Eo_circle_green_checkmark.svg.png"
+            if task.is_done
+            else None,
         )
         self.add_field(
             name="Created",

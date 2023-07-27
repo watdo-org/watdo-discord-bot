@@ -2,7 +2,7 @@ import math
 import json
 from abc import ABC
 import datetime as dt
-from typing import Dict, Any, Optional
+from typing import cast, Dict, Any, Optional
 from dateutil import rrule
 from app.safe_data import SafeData, String, Boolean, Timestamp
 
@@ -105,3 +105,16 @@ class Task(Model):
             return False
 
         return isinstance(self.due.value, str)
+
+    @property
+    def is_done(self) -> bool:
+        if not self.is_recurring:
+            return self.last_done is not None
+
+        if self.last_done is None:
+            return False
+
+        if self.next_reminder is None:
+            return self.last_done is not None
+
+        return cast(dt.datetime, self.due_date).timestamp() == self.next_reminder.value
