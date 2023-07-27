@@ -1,5 +1,6 @@
 import os
 import glob
+import asyncio
 import discord
 from discord.ext import commands as dc
 from app.database import Database
@@ -7,8 +8,9 @@ from app.environ import DISCORD_TOKEN
 
 
 class Bot(dc.Bot):
-    def __init__(self, database: Database) -> None:
+    def __init__(self, loop: asyncio.AbstractEventLoop, database: Database) -> None:
         super().__init__(
+            loop=loop,
             command_prefix="watdo ",
             help_command=None,
             intents=discord.Intents.all(),

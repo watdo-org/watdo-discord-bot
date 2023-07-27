@@ -1,5 +1,5 @@
 import json
-from typing import Any, List, Optional, Dict
+from typing import Any, List, Optional, Dict, AsyncIterator
 from redis.asyncio import Redis
 from app.models import Task
 from app.environ import REDISHOST, REDISPORT, REDISUSER, REDISPASSWORD
@@ -14,6 +14,10 @@ class Database:
             password=REDISPASSWORD,
         )
         self._cache = DatabaseCache(self)
+
+    async def iter_keys(self, match: str) -> AsyncIterator[str]:
+        async for key in self._connection.scan_iter(match=match):
+            yield key.decode()
 
     async def get_user_tasks(
         self, uid: str, *, category: Optional[str] = None
