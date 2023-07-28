@@ -1,12 +1,15 @@
 import asyncio
+from typing import TYPE_CHECKING
 import discord
 from discord.ext import commands as dc
-from app.discord import Bot
 from app.database import Database
+
+if TYPE_CHECKING:
+    from app.discord import Bot
 
 
 class BaseCog(dc.Cog):
-    def __init__(self, bot: Bot, database: Database) -> None:
+    def __init__(self, bot: "Bot", database: Database) -> None:
         self.bot = bot
         self.db = database
 

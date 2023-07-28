@@ -1,9 +1,12 @@
 import asyncio
 import datetime as dt
-from app.discord import Bot
+from typing import TYPE_CHECKING
 from app.database import Database
 from app.safe_data import Timestamp
 from app.discord.embeds import TaskEmbed
+
+if TYPE_CHECKING:
+    from app.discord import Bot
 
 
 class Reminder:
@@ -11,7 +14,7 @@ class Reminder:
         self,
         loop: asyncio.AbstractEventLoop,
         database: Database,
-        bot: Bot,
+        bot: "Bot",
     ) -> None:
         self.loop = loop
         self.db = database

@@ -1,19 +1,30 @@
 import asyncio
-from typing import Any, Dict, Optional, List, Awaitable, Callable, Iterator
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    Optional,
+    List,
+    Awaitable,
+    Callable,
+    Iterator,
+)
 import humanize
 import discord
 from discord.ext import commands as dc
-from app.discord import Bot
 from app.models import Task
+
+if TYPE_CHECKING:
+    from app.discord import Bot
 
 
 class Embed(discord.Embed):
-    def __init__(self, bot: Bot, title: str, **kwargs: Any) -> None:
+    def __init__(self, bot: "Bot", title: str, **kwargs: Any) -> None:
         super().__init__(title=title, color=bot.color, **kwargs)
 
 
 class TaskEmbed(Embed):
-    def __init__(self, bot: Bot, task: Task) -> None:
+    def __init__(self, bot: "Bot", task: Task) -> None:
         super().__init__(bot, task.title.value, timestamp=task.due_date)
         author = "📝"
 
@@ -47,7 +58,7 @@ class TaskEmbed(Embed):
 class PagedEmbed:
     def __init__(
         self,
-        bot: Bot,
+        bot: "Bot",
         *,
         timeout: float = 300,
         controls: Optional[Dict[str, str]] = None,
