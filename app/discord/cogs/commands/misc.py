@@ -16,10 +16,15 @@ class Miscellaneous(BaseCog):
             if not commands:
                 continue
 
-            cmds = "\n".join(
-                f"{c.name} {self.parse_params(c)}\n> {c.help}" for c in commands
-            )
-            embed.add_field(name=cog.qualified_name, value=cmds)
+            cmds = []
+
+            for c in commands:
+                names = " or ".join(f"`{n}`" for n in [c.name] + c.aliases)
+                params = self.parse_params(c)
+                new_line = "\n" if params else ""
+                cmds.append(f"{names}{new_line}{params}\n> {c.help}")
+
+            embed.add_field(name=cog.qualified_name, value="\n\n".join(cmds))
 
         await ctx.send(embed=embed)
 

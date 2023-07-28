@@ -70,7 +70,7 @@ class Tasks(BaseCog):
         await self.db.add_user_task(ctx.author.id, task)
         await ctx.send(embed=TaskEmbed(self.bot, task))
 
-    @dc.command()
+    @dc.command(aliases=["do"])
     async def do_priority(
         self,
         ctx: dc.Context,
