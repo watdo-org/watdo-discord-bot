@@ -5,7 +5,7 @@ from typing import Any
 import discord
 from discord.ext import commands as dc
 from app.database import Database
-from app.environ import DISCORD_TOKEN
+from app.environ import DISCORD_TOKEN, IS_DEV
 from app.logging import get_logger
 from app.reminder import Reminder
 from app.discord.cogs import BaseCog
@@ -58,6 +58,14 @@ class Bot(dc.Bot):
                     )
 
         await super().start(DISCORD_TOKEN)
+
+    async def on_message(self, message: discord.Message) -> None:
+        if message.channel.id == 1028932255256682536:
+            if IS_DEV:
+                await self.process_commands(message)
+        else:
+            if not IS_DEV:
+                await self.process_commands(message)
 
     async def _on_ready_event(self) -> None:
         Reminder(self.loop, self.db, self).start()
