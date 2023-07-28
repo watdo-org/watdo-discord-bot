@@ -76,6 +76,6 @@ class Bot(dc.Bot):
     ) -> None:
         if isinstance(error, dc.MissingRequiredArgument):
             params = BaseCog.parse_params(ctx.command)
-            await ctx.reply(f"{ctx.prefix}{ctx.invoked_with} {params}")
+            await ctx.send(f"{ctx.prefix}{ctx.invoked_with} {params}")
         else:
-            await ctx.reply(error)
+            await ctx.send(error)
