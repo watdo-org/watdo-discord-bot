@@ -1,7 +1,7 @@
 import os
 import glob
 import asyncio
-from typing import Any
+from typing import cast, Any
 import discord
 from discord.ext import commands as dc
 from watdo.environ import IS_DEV
@@ -60,6 +60,14 @@ class Bot(dc.Bot):
         await super().start(token, reconnect=reconnect)
 
     async def on_message(self, message: discord.Message) -> None:
+        bot_user = cast(discord.User, self.user)
+
+        if message.author.id == bot_user.id:
+            return
+
+        if bot_user.mention in message.content.replace("<@!", "<@"):
+            await message.reply(f"Type `{self.command_prefix}help` for help.")
+
         if message.channel.id == 1028932255256682536:
             if IS_DEV:
                 await self.process_commands(message)
