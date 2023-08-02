@@ -1,6 +1,8 @@
 import asyncio
+import datetime as dt
 from typing import (
     TYPE_CHECKING,
+    cast,
     Any,
     Dict,
     Optional,
@@ -48,10 +50,11 @@ class TaskEmbed(Embed):
         )
 
         if task.last_done is not None:
+            last_done_date = cast(dt.datetime, task.last_done_date)
             self.add_field(
                 name="Last Done",
-                value=f"{humanize.naturaldate(task.last_done_date).capitalize()} "
-                f"({humanize.naturaltime(task.last_done_date)})",
+                value=f"{humanize.naturaldate(last_done_date).capitalize()} "
+                f"({humanize.naturaltime(last_done_date)})",
             )
 
 
@@ -97,10 +100,10 @@ class PagedEmbed:
         for index, page in enumerate(self.pages):
             page.set_footer(text=f"{index + 1}/{len(self.pages)}")
 
-    def send(self, ctx: dc.Context) -> None:
+    def send(self, ctx: dc.Context["Bot"]) -> None:
         self.bot.loop.create_task(self._send(ctx))
 
-    async def _send(self, ctx: dc.Context) -> None:
+    async def _send(self, ctx: dc.Context["Bot"]) -> None:
         """Start and send the embeds paginating lorem."""
         self._set_page_numbers()
 

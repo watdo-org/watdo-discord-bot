@@ -4,8 +4,8 @@ import asyncio
 from typing import Any
 import discord
 from discord.ext import commands as dc
+from watdo.environ import IS_DEV
 from watdo.database import Database
-from watdo.environ import DISCORD_TOKEN, IS_DEV
 from watdo.logging import get_logger
 from watdo.reminder import Reminder
 from watdo.discord.cogs import BaseCog
@@ -36,7 +36,7 @@ class Bot(dc.Bot):
 
         self.add_listener(event_wrapper, event_name)
 
-    async def start(self) -> None:
+    async def start(self, token: str, *, reconnect: bool = True) -> None:
         # Load cogs
         for path in glob.iglob(
             os.path.join("watdo", "discord", "cogs", "**", "*"),
@@ -57,7 +57,7 @@ class Bot(dc.Bot):
                         f"Please add docstring for {command.module}.{command.name}"
                     )
 
-        await super().start(DISCORD_TOKEN)
+        await super().start(token, reconnect=reconnect)
 
     async def on_message(self, message: discord.Message) -> None:
         if message.channel.id == 1028932255256682536:
@@ -72,10 +72,10 @@ class Bot(dc.Bot):
         get_logger("Bot.on_ready").info("Bot is ready.")
 
     async def _on_command_error_event(
-        self, ctx: dc.Context, error: dc.CommandError
+        self, ctx: dc.Context["Bot"], error: dc.CommandError
     ) -> None:
-        if isinstance(error, dc.MissingRequiredArgument):
+        if isinstance(error, dc.MissingRequiredArgument) and ctx.command is not None:
             params = BaseCog.parse_params(ctx.command)
             await ctx.send(f"{ctx.prefix}{ctx.invoked_with} {params}")
         else:
-            await ctx.send(error)
+            await ctx.send(f"**{type(error).__name__}:** {error}")

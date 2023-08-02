@@ -31,6 +31,10 @@ class Reminder:
 
                     if task.next_reminder.value <= dt.datetime.now().timestamp():
                         user = self.bot.get_user(int(uid))
+
+                        if user is None:
+                            continue
+
                         self.bot.loop.create_task(
                             user.send(
                                 "Please do this task!!",

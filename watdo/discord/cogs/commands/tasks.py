@@ -15,9 +15,9 @@ from watdo.discord.embeds import Embed, TaskEmbed, PagedEmbed
 
 class Tasks(BaseCog):
     @dc.command()
-    async def summary(self, ctx: dc.Context) -> None:
+    async def summary(self, ctx: dc.Context[Bot]) -> None:
         """Show the summary of all your tasks."""
-        tasks = await self.db.get_user_tasks(ctx.author.id)
+        tasks = await self.db.get_user_tasks(str(ctx.author.id))
         embed = Embed(self.bot, "TASKS SUMMARY")
         embed.add_field(name="Total", value=len(tasks))
         embed.add_field(
@@ -49,7 +49,7 @@ class Tasks(BaseCog):
     @dc.command()
     async def todo(
         self,
-        ctx: dc.Context,
+        ctx: dc.Context[Bot],
         title: str,
         category: str,
         is_important: bool,
@@ -67,18 +67,18 @@ class Tasks(BaseCog):
         if task.due_date:
             task.next_reminder = Timestamp(task.due_date.timestamp())
 
-        await self.db.add_user_task(ctx.author.id, task)
+        await self.db.add_user_task(str(ctx.author.id), task)
         await ctx.send(embed=TaskEmbed(self.bot, task))
 
     @dc.command(aliases=["do"])
     async def do_priority(
         self,
-        ctx: dc.Context,
+        ctx: dc.Context[Bot],
         category: Optional[str] = None,
     ) -> None:
         """Show priority tasks."""
         tasks = await self.db.get_user_tasks(
-            ctx.author.id,
+            str(ctx.author.id),
             category=category,
             ignore_done=True,
         )
@@ -94,9 +94,9 @@ class Tasks(BaseCog):
         paged_embed.send(ctx)
 
     async def _confirm_task_action(
-        self, ctx: dc.Context, title: str
+        self, ctx: dc.Context[Bot], title: str
     ) -> Tuple[Optional[discord.Message], Optional[int], Optional[Task]]:
-        index, task = await self.db.get_user_task(ctx.author.id, title)
+        index, task = await self.db.get_user_task(str(ctx.author.id), title)
 
         if task is None:
             await ctx.send(f'"{title}" not found ❌')
@@ -111,26 +111,27 @@ class Tasks(BaseCog):
         return None, None, None
 
     @dc.command()
-    async def done(self, ctx: dc.Context, title: str) -> None:
+    async def done(self, ctx: dc.Context[Bot], title: str) -> None:
         """Remove a task."""
+        uid = str(ctx.author.id)
         message, task_index, task = await self._confirm_task_action(ctx, title)
 
         if (message is not None) and (task_index is not None) and (task is not None):
             task.last_done = Timestamp(time.time())
-            await self.db.set_user_task(ctx.author.id, task_index, task)
+            await self.db.set_user_task(uid, task_index, task)
 
             if not task.is_recurring:
-                await self.db.remove_user_task(ctx.author.id, task)
+                await self.db.remove_user_task(uid, task)
 
             await message.edit(content="Done ✅")
 
     @dc.command()
-    async def cancel(self, ctx: dc.Context, title: str) -> None:
+    async def cancel(self, ctx: dc.Context[Bot], title: str) -> None:
         """Cancel a task."""
         message, task_index, task = await self._confirm_task_action(ctx, title)
 
         if message is not None and task is not None:
-            await self.db.remove_user_task(ctx.author.id, task)
+            await self.db.remove_user_task(str(ctx.author.id), task)
             await message.edit(content="Cancelled ✅")
 
 

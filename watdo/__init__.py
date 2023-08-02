@@ -1,5 +1,6 @@
 import asyncio
 from watdo.discord import Bot
+from watdo.environ import DISCORD_TOKEN
 from watdo.database import Database
 from watdo._main_runner import async_main_runner
 
@@ -8,7 +9,7 @@ async def async_main(loop: asyncio.AbstractEventLoop) -> int:
     db = Database()
     bot = Bot(loop, db)
 
-    await bot.start()
+    await bot.start(DISCORD_TOKEN)
 
     return 0
 

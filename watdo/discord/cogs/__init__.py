@@ -1,5 +1,5 @@
 import asyncio
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 import discord
 from discord.ext import commands as dc
 from watdo.database import Database
@@ -14,7 +14,7 @@ class BaseCog(dc.Cog):
         self.db = database
 
     @staticmethod
-    def parse_params(command: dc.Command) -> str:
+    def parse_params(command: dc.Command[Any, Any, Any]) -> str:
         params = []
 
         for param in command.clean_params.values():
@@ -43,7 +43,7 @@ class BaseCog(dc.Cog):
         return " ".join(params)
 
     async def wait_for_confirmation(
-        self, ctx: dc.Context, message: discord.Message
+        self, ctx: dc.Context["Bot"], message: discord.Message
     ) -> bool:
         buttons = ("✅", "❌")
 
