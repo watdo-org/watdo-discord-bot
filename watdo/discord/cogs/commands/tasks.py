@@ -6,7 +6,6 @@ import recurrent
 import dateparser
 import discord
 from discord.ext import commands as dc
-from watdo.utils import datetime_now
 from watdo.models import Task, User
 from watdo.discord import Bot
 from watdo.safe_data import Timestamp, UTCOffsetHour
@@ -37,7 +36,7 @@ class Tasks(BaseCog):
 
         if isinstance(rr, str):
             if "DTSTART:" not in rr:
-                date_now = datetime_now(utc_offset_hour)
+                date_now = dt.datetime.now()
                 d = date_now.strftime("%Y%m%dT%H%M%S")
                 rr = f"DTSTART:{d}\n{rr}"
 
