@@ -43,6 +43,8 @@ class Reminder:
                                 )
                             )
 
+                        old_task_str = task.as_json_str()
+
                         if task.is_recurring:
                             ts = task.rrule.after(dt.datetime.now()).timestamp()
                             task.next_reminder = Timestamp(ts)
@@ -50,7 +52,7 @@ class Reminder:
                             task.next_reminder = None
 
                         self.bot.loop.create_task(
-                            self.db.set_user_task(uid, task_index, task)
+                            self.db.set_user_task(uid, old_task_str, task)
                         )
 
             await asyncio.sleep(1)

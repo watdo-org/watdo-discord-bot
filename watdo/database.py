@@ -1,5 +1,5 @@
 import json
-from typing import Any, List, Optional, Dict, AsyncIterator, Tuple
+from typing import Any, List, Optional, Dict, AsyncIterator
 from redis.asyncio import Redis
 from watdo.models import Task, User
 from watdo.environ import REDISHOST, REDISPORT, REDISUSER, REDISPASSWORD
@@ -43,20 +43,21 @@ class Database:
 
         return tasks
 
-    async def get_user_task(
-        self, uid: str, title: str
-    ) -> Tuple[Optional[int], Optional[Task]]:
-        for index, task in enumerate(await self.get_user_tasks(uid)):
+    async def get_user_task(self, uid: str, title: str) -> Optional[Task]:
+        for task in await self.get_user_tasks(uid):
             if task.title.value == title:
-                return index, task
+                return task
 
-        return None, None
+        return None
 
     async def add_user_task(self, uid: str, task: Task) -> None:
         await self._cache.lpush(f"tasks.{uid}", task.as_json_str())
 
-    async def set_user_task(self, uid: str, index: int, task: Task) -> None:
-        await self._cache.lset(f"tasks.{uid}", index, task.as_json_str())
+    async def set_user_task(self, uid: str, old_task_str: str, new_task: Task) -> None:
+        for index, task in enumerate(await self.get_user_tasks(uid)):
+            if task.as_json_str() == old_task_str:
+                await self._cache.lset(f"tasks.{uid}", index, new_task.as_json_str())
+                break
 
     async def remove_user_task(self, uid: str, task: Task) -> None:
         await self._cache.lrem(f"tasks.{uid}", task.as_json_str())

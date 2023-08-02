@@ -122,30 +122,31 @@ class Tasks(BaseCog):
 
     async def _confirm_task_action(
         self, ctx: dc.Context[Bot], title: str
-    ) -> Tuple[Optional[discord.Message], Optional[int], Optional[Task]]:
-        index, task = await self.db.get_user_task(str(ctx.author.id), title)
+    ) -> Tuple[Optional[discord.Message], Optional[Task]]:
+        task = await self.db.get_user_task(str(ctx.author.id), title)
 
         if task is None:
             await ctx.send(f'"{title}" not found ❌')
-            return None, None, None
+            return None, None
 
         message = await ctx.send("Are you sure?", embed=TaskEmbed(self.bot, task))
         is_confirm = await self.wait_for_confirmation(ctx, message)
 
         if is_confirm:
-            return message, index, task
+            return message, task
 
-        return None, None, None
+        return None, None
 
     @dc.command()
     async def done(self, ctx: dc.Context[Bot], title: str) -> None:
         """Remove a task."""
         uid = str(ctx.author.id)
-        message, task_index, task = await self._confirm_task_action(ctx, title)
+        message, task = await self._confirm_task_action(ctx, title)
 
-        if (message is not None) and (task_index is not None) and (task is not None):
+        if (message is not None) and (task is not None):
+            old_task_str = task.as_json_str()
             task.last_done = Timestamp(time.time())
-            await self.db.set_user_task(uid, task_index, task)
+            await self.db.set_user_task(uid, old_task_str, task)
 
             if not task.is_recurring:
                 await self.db.remove_user_task(uid, task)
@@ -155,9 +156,9 @@ class Tasks(BaseCog):
     @dc.command()
     async def cancel(self, ctx: dc.Context[Bot], title: str) -> None:
         """Cancel a task."""
-        message, task_index, task = await self._confirm_task_action(ctx, title)
+        message, task = await self._confirm_task_action(ctx, title)
 
-        if message is not None and task is not None:
+        if (message is not None) and (task is not None):
             await self.db.remove_user_task(str(ctx.author.id), task)
             await message.edit(content="Cancelled ✅")
 
