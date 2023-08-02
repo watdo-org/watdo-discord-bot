@@ -4,7 +4,7 @@ from abc import ABC
 import datetime as dt
 from typing import cast, Dict, Any, Optional
 from dateutil import rrule
-from app.safe_data import SafeData, String, Boolean, Timestamp
+from app.safe_data import SafeData, String, Boolean, Timestamp, UTCOffsetHour
 
 
 class Model(ABC):
@@ -20,7 +20,7 @@ class Model(ABC):
 
             if not isinstance(value, SafeData):
                 t = type(value).__name__
-                raise TypeError(f"\"{key}\": '{t}' should be 'SafeData[{t}]'")
+                raise TypeError(f"\"{key}\": '{t}' should be 'SafeData'")
 
     def as_json(self) -> Dict[str, Any]:
         res: Dict[str, Any] = {}
@@ -118,3 +118,9 @@ class Task(Model):
             return self.last_done is not None
 
         return cast(dt.datetime, self.due_date).timestamp() == self.next_reminder.value
+
+
+class User(Model):
+    def __init__(self, *, utc_offset_hour: float, created_at: float) -> None:
+        self.utc_offset_hour = UTCOffsetHour(utc_offset_hour)
+        super().__init__(created_at=created_at)

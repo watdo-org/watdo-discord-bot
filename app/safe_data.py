@@ -53,6 +53,17 @@ class Number(SafeData[float]):
         return True
 
 
+class UTCOffsetHour(Number):
+    def __init__(self, value: float) -> None:
+        super().__init__(value, min_val=-24, max_val=24)
+
+    def _is_valid(self) -> bool:
+        if self.value >= self.max_val or self.value <= self.min_val:
+            return False
+
+        return True
+
+
 class Timestamp(Number):
     def __init__(self, value: float) -> None:
         super().__init__(value, min_val=0, max_val=9999999999)
