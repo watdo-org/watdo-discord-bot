@@ -18,19 +18,22 @@ class BaseCog(dc.Cog):
         params = []
 
         for param in command.clean_params.values():
-            t = param.annotation
+            if "[" in str(param.annotation):
+                t = str(param.annotation)
+            else:
+                t = param.annotation.__name__
 
-            if t is bool:
-                t = "yes/no"
-
-            if t in (int, float):
-                t = "number"
-
-            if "typing.Optional[" in str(t):
+            if "typing.Optional[" in t:
                 t = str(t).lstrip("typing.Optional[").rstrip("]")
 
+            if t == "bool":
+                t = "yes/no"
+
+            if t in ("int", "float"):
+                t = "number"
+
             t = f"*{t}*"
-            p = param.name if param.annotation is str else f"{param.name}: {t}"
+            p = param.name if t == "*str*" else f"{param.name}: {t}"
             p = p.replace("_", " ")
 
             if param.required:
