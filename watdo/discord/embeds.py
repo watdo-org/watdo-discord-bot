@@ -12,10 +12,10 @@ from typing import (
 import humanize
 import discord
 from discord.ext import commands as dc
-from app.models import Task
+from watdo.models import Task
 
 if TYPE_CHECKING:
-    from app.discord import Bot
+    from watdo.discord import Bot
 
 
 class Embed(discord.Embed):

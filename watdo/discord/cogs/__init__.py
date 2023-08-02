@@ -2,10 +2,10 @@ import asyncio
 from typing import TYPE_CHECKING
 import discord
 from discord.ext import commands as dc
-from app.database import Database
+from watdo.database import Database
 
 if TYPE_CHECKING:
-    from app.discord import Bot
+    from watdo.discord import Bot
 
 
 class BaseCog(dc.Cog):

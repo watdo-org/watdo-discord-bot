@@ -1,12 +1,12 @@
 import asyncio
 import datetime as dt
 from typing import TYPE_CHECKING
-from app.database import Database
-from app.safe_data import Timestamp
-from app.discord.embeds import TaskEmbed
+from watdo.database import Database
+from watdo.safe_data import Timestamp
+from watdo.discord.embeds import TaskEmbed
 
 if TYPE_CHECKING:
-    from app.discord import Bot
+    from watdo.discord import Bot
 
 
 class Reminder:

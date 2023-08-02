@@ -6,11 +6,11 @@ import recurrent
 import dateparser
 import discord
 from discord.ext import commands as dc
-from app.models import Task
-from app.discord import Bot
-from app.safe_data import Timestamp
-from app.discord.cogs import BaseCog
-from app.discord.embeds import Embed, TaskEmbed, PagedEmbed
+from watdo.models import Task
+from watdo.discord import Bot
+from watdo.safe_data import Timestamp
+from watdo.discord.cogs import BaseCog
+from watdo.discord.embeds import Embed, TaskEmbed, PagedEmbed
 
 
 class Tasks(BaseCog):

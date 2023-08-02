@@ -1,7 +1,7 @@
 from discord.ext import commands as dc
-from app.discord import Bot
-from app.discord.cogs import BaseCog
-from app.discord.embeds import Embed
+from watdo.discord import Bot
+from watdo.discord.cogs import BaseCog
+from watdo.discord.embeds import Embed
 
 
 class Miscellaneous(BaseCog):

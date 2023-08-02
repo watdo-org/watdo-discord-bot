@@ -1,8 +1,8 @@
 import json
 from typing import Any, List, Optional, Dict, AsyncIterator, Tuple
 from redis.asyncio import Redis
-from app.models import Task, User
-from app.environ import REDISHOST, REDISPORT, REDISUSER, REDISPASSWORD
+from watdo.models import Task, User
+from watdo.environ import REDISHOST, REDISPORT, REDISUSER, REDISPASSWORD
 
 
 class Database:

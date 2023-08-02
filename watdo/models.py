@@ -4,7 +4,7 @@ from abc import ABC
 import datetime as dt
 from typing import cast, Dict, Any, Optional
 from dateutil import rrule
-from app.safe_data import SafeData, String, Boolean, Timestamp, UTCOffsetHour
+from watdo.safe_data import SafeData, String, Boolean, Timestamp, UTCOffsetHour
 
 
 class Model(ABC):

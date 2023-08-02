@@ -4,11 +4,11 @@ import asyncio
 from typing import Any
 import discord
 from discord.ext import commands as dc
-from app.database import Database
-from app.environ import DISCORD_TOKEN, IS_DEV
-from app.logging import get_logger
-from app.reminder import Reminder
-from app.discord.cogs import BaseCog
+from watdo.database import Database
+from watdo.environ import DISCORD_TOKEN, IS_DEV
+from watdo.logging import get_logger
+from watdo.reminder import Reminder
+from watdo.discord.cogs import BaseCog
 
 
 class Bot(dc.Bot):
@@ -39,7 +39,7 @@ class Bot(dc.Bot):
     async def start(self) -> None:
         # Load cogs
         for path in glob.iglob(
-            os.path.join("app", "discord", "cogs", "**", "*"),
+            os.path.join("watdo", "discord", "cogs", "**", "*"),
             recursive=True,
         ):
             if path.endswith("__init__.py"):

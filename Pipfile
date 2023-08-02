@@ -5,16 +5,23 @@ name = "pypi"
 
 [scripts]
 app = "python run.py"
+tests = "bash ./run_tests.sh"
+format = "black ."
 
 [packages]
+uvloop = {version = "*", sys_platform = "== 'linux'"}
 redis = "*"
-uvloop = "*"
 "discord.py" = "*"
 dateparser = "*"
 recurrent = "*"
 humanize = "*"
+charset-normalizer = "*"
 
 [dev-packages]
+mypy = "*"
+black = "*"
+coverage = "*"
+pytest = "*"
 
 [requires]
 python_version = "3.11"
