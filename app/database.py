@@ -1,7 +1,7 @@
 import json
 from typing import Any, List, Optional, Dict, AsyncIterator, Tuple
 from redis.asyncio import Redis
-from app.models import Task
+from app.models import Task, User
 from app.environ import REDISHOST, REDISPORT, REDISUSER, REDISPASSWORD
 
 
@@ -61,22 +61,40 @@ class Database:
     async def remove_user_task(self, uid: str, task: Task) -> None:
         await self._cache.lrem(f"tasks.{uid}", task.as_json_str())
 
+    async def get_user_data(self, uid: str) -> Optional[User]:
+        data = await self._cache.get(f"user.{uid}")
+
+        if data is None:
+            return None
+
+        return User(**json.loads(data))
+
+    async def set_user_data(self, uid: str, data: User) -> None:
+        await self._cache.set(f"user.{uid}", data.as_json_str())
+
 
 class DatabaseCache:
     def __init__(self, database: Database) -> None:
         self.db = database
         self._cache: Dict[str, Any] = {}
 
-    async def lrange(self, key: str, *, from_cache: bool = True) -> List[str]:
-        if from_cache:
-            cached = self._cache.get(key)
+    async def get(self, key: str) -> Optional[str]:
+        data = self._cache.get(key) or await self.db._connection.get(key)
 
-            if cached is not None:
-                return cached
+        if data is None:
+            return None
 
-        data = [d.decode() for d in await self.db._connection.lrange(key, 0, -1)]
         self._cache[key] = data
         return data
+
+    async def set(self, key: str, value: str) -> None:
+        await self.db._connection.set(key, value)
+        self._cache[key] = value
+
+    async def lrange(self, key: str) -> List[str]:
+        data = self._cache.get(key) or await self.db._connection.lrange(key, 0, -1)
+        self._cache[key] = data
+        return [d.decode() for d in data]
 
     async def lpush(self, key: str, value: str) -> None:
         await self.db._connection.lpush(key, value)
@@ -84,7 +102,7 @@ class DatabaseCache:
         try:
             self._cache[key].insert(0, value)
         except KeyError:
-            await self.lrange(key, from_cache=False)
+            await self.lrange(key)
 
     async def lrem(self, key: str, value: str) -> None:
         await self.db._connection.lrem(key, 1, value)
