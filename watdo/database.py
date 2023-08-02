@@ -76,38 +76,41 @@ class Database:
 class DatabaseCache:
     def __init__(self, database: Database) -> None:
         self.db = database
-        self._cache: Dict[str, Any] = {}
+        self._str_cache: Dict[str, str] = {}
+        self._list_cache: Dict[str, List[str]] = {}
 
     async def get(self, key: str) -> Optional[str]:
-        data = self._cache.get(key) or await self.db._connection.get(key)
+        data = self._str_cache.get(key) or await self.db._connection.get(key)
 
         if data is None:
             return None
 
-        self._cache[key] = data
+        data = data.decode() if isinstance(data, bytes) else data
+        self._str_cache[key] = data
         return data
 
     async def set(self, key: str, value: str) -> None:
         await self.db._connection.set(key, value)
-        self._cache[key] = value
+        self._str_cache[key] = value
 
     async def lrange(self, key: str) -> List[str]:
-        data = self._cache.get(key) or await self.db._connection.lrange(key, 0, -1)
-        self._cache[key] = data
-        return [d.decode() for d in data]
+        data = self._list_cache.get(key) or await self.db._connection.lrange(key, 0, -1)
+        data = [d.decode() if isinstance(d, bytes) else d for d in data]
+        self._list_cache[key] = data
+        return data
 
     async def lpush(self, key: str, value: str) -> None:
         await self.db._connection.lpush(key, value)
 
         try:
-            self._cache[key].insert(0, value)
+            self._list_cache[key].insert(0, value)
         except KeyError:
             await self.lrange(key)
 
     async def lrem(self, key: str, value: str) -> None:
         await self.db._connection.lrem(key, 1, value)
-        self._cache[key].remove(value)
+        self._list_cache[key].remove(value)
 
     async def lset(self, key: str, index: int, value: str) -> None:
         await self.db._connection.lset(key, index, value)
-        self._cache[key][index] = value
+        self._list_cache[key][index] = value

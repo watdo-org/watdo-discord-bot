@@ -6,9 +6,10 @@ import recurrent
 import dateparser
 import discord
 from discord.ext import commands as dc
-from watdo.models import Task
+from watdo.utils import datetime_now
+from watdo.models import Task, User
 from watdo.discord import Bot
-from watdo.safe_data import Timestamp
+from watdo.safe_data import Timestamp, UTCOffsetHour
 from watdo.discord.cogs import BaseCog
 from watdo.discord.embeds import Embed, TaskEmbed, PagedEmbed
 
@@ -26,7 +27,7 @@ class Tasks(BaseCog):
         )
         await ctx.send(embed=embed)
 
-    def _parse_due(self, due: str) -> Optional[float | str]:
+    def _parse_due(self, due: str, utc_offset_hour: float) -> Optional[float | str]:
         date = dateparser.parse(due)
 
         if date is not None:
@@ -36,7 +37,8 @@ class Tasks(BaseCog):
 
         if isinstance(rr, str):
             if "DTSTART:" not in rr:
-                d = dt.datetime.now().strftime("%Y%m%d")
+                date_now = datetime_now(utc_offset_hour)
+                d = date_now.strftime("%Y%m%dT%H%M%S")
                 rr = f"DTSTART:{d}\n{rr}"
 
             return rr
@@ -45,6 +47,16 @@ class Tasks(BaseCog):
             return rr.timestamp()
 
         return None
+
+    async def _validate_utc_offset(self, message: discord.Message) -> Optional[float]:
+        try:
+            return UTCOffsetHour(float(message.content)).value
+        except Exception:
+            await message.reply(
+                "Please only send a number between -24 and 24.\n"
+                "Example: `8` for UTC+8."
+            )
+            return None
 
     @dc.command()
     async def todo(
@@ -56,18 +68,33 @@ class Tasks(BaseCog):
         due: Optional[str] = None,
     ) -> None:
         """Add a task to do."""
+        uid = str(ctx.author.id)
+        user = await self.db.get_user_data(uid)
+
+        if user is None:
+            utc_offset = (
+                await self.interview(
+                    ctx,
+                    questions={
+                        "What is your UTC offset?": self._validate_utc_offset,
+                    },
+                )
+            )[0]
+            user = User(utc_offset_hour=utc_offset, created_at=time.time())
+            await self.db.set_user_data(uid, user)
+
         task = Task(
             title=title,
             category=category,
             is_important=is_important,
-            due=self._parse_due(due) if due else None,
+            due=self._parse_due(due, user.utc_offset_hour.value) if due else None,
             created_at=time.time(),
         )
 
         if task.due_date:
             task.next_reminder = Timestamp(task.due_date.timestamp())
 
-        await self.db.add_user_task(str(ctx.author.id), task)
+        await self.db.add_user_task(uid, task)
         await ctx.send(embed=TaskEmbed(self.bot, task))
 
     @dc.command(aliases=["do"])

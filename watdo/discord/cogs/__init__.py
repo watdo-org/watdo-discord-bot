@@ -1,5 +1,5 @@
 import asyncio
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Dict, Callable, Awaitable, List
 import discord
 from discord.ext import commands as dc
 from watdo.database import Database
@@ -70,3 +70,35 @@ class BaseCog(dc.Cog):
             return True
 
         return False
+
+    async def interview(
+        self,
+        ctx: dc.Context["Bot"],
+        *,
+        questions: Dict[str, Callable[[discord.Message], Awaitable[Any]]],
+    ) -> List[Any]:
+        def check(m: discord.Message) -> bool:
+            if m.channel.id == ctx.channel.id:
+                if m.author.id == ctx.author.id:
+                    return True
+
+            return False
+
+        async def ask(question: str) -> Any:
+            message = await self.bot.wait_for("message", check=check)
+            return await questions[question](message)
+
+        answers = []
+        keys = list(questions.keys())
+        bot_msg = await ctx.reply(keys[0])
+
+        for index, question in enumerate(keys):
+            if index != 0:
+                await bot_msg.edit(content=question)
+
+            while (answer := await ask(question)) is None:
+                pass
+
+            answers.append(answer)
+
+        return answers

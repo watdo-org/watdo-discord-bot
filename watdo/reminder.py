@@ -35,12 +35,13 @@ class Reminder:
                         if user is None:
                             continue
 
-                        self.bot.loop.create_task(
-                            user.send(
-                                "Please do this task!!",
-                                embed=TaskEmbed(self.bot, task),
+                        if not task.is_done:
+                            self.bot.loop.create_task(
+                                user.send(
+                                    "Please do this task!!",
+                                    embed=TaskEmbed(self.bot, task),
+                                )
                             )
-                        )
 
                         if task.is_recurring:
                             ts = task.rrule.after(dt.datetime.now()).timestamp()
