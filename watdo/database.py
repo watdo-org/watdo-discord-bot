@@ -60,7 +60,12 @@ class Database:
                 break
 
     async def remove_user_task(self, uid: str, task: Task) -> None:
-        await self._cache.lrem(f"tasks.{uid}", task.as_json_str())
+        data = task.as_json_str()
+
+        try:
+            await self._cache.lrem(f"tasks.{uid}", data)
+        finally:
+            await self._cache.lpush(f"archived_tasks.{uid}", data)
 
     async def get_user_data(self, uid: str) -> Optional[User]:
         data = await self._cache.get(f"user.{uid}")
