@@ -28,7 +28,11 @@ class Miscellaneous(BaseCog):
                 new_line = "\n" if params else ""
                 cmds.append(f"{names}{new_line}{params}\n{c.help}")
 
-            embed.add_field(name=cog.qualified_name, value="\n\n".join(cmds))
+            embed.add_field(
+                name=cog.qualified_name,
+                value=(f"{cog.description}\n" if cog.description else "")
+                + "\n\n".join(cmds),
+            )
 
         await ctx.send(embed=embed)
 
