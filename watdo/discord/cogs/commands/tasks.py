@@ -65,6 +65,7 @@ class Tasks(BaseCog):
         category: str,
         is_important: bool,
         due: Optional[str] = None,
+        description: Optional[str] = None,
     ) -> None:
         """Add a task to do.
         Use this please: https://nietsuu.github.io/watdo"""
@@ -88,6 +89,7 @@ class Tasks(BaseCog):
             category=category,
             is_important=is_important,
             due=self._parse_due(due, user.utc_offset_hour.value) if due else None,
+            description=description,
             created_at=time.time(),
         )
 

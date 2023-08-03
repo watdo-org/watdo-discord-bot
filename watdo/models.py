@@ -52,14 +52,18 @@ class Task(Model):
         category: str,
         is_important: bool,
         due: Optional[float | str],
+        description: Optional[str] = None,
         last_done: Optional[float] = None,
         next_reminder: Optional[float] = None,
         created_at: float,
     ) -> None:
-        self.title = String(title, min_len=1, max_len=1000)
-        self.category = String(category, min_len=0, max_len=100)
+        self.title = String(title, min_len=1, max_len=200)
+        self.category = String(category, min_len=0, max_len=50)
         self.is_important = Boolean(is_important)
         self.due: Optional[Timestamp | String]
+        self.description = (
+            String(description, min_len=0, max_len=1000) if description else None
+        )
         self.last_done = Timestamp(last_done) if last_done else None
         self.next_reminder = Timestamp(next_reminder) if next_reminder else None
 

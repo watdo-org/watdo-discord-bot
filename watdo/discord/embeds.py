@@ -43,6 +43,15 @@ class TaskEmbed(Embed):
             if task.is_done
             else None,
         )
+
+        if task.description is not None:
+            self.add_field(
+                name="Description",
+                value=bytes(task.description.value, "utf-8")
+                .decode("unicode_escape")
+                .replace(" ", " \u200b"),
+            )
+
         self.add_field(
             name="Created",
             value=f"{humanize.naturaldate(task.date_created).capitalize()} "
