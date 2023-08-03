@@ -13,7 +13,12 @@ class Shortcuts(BaseCog, description="Speed up your workflow with command shortc
         message: discord.Message,
     ) -> None:
         """Set a command shortcut.
-        When you type in the **name**, **message** will execute."""
+        First, run a command you want to make a shortcut of like:
+        "watdo summary"
+        Then, copy your message link or id.
+        Finally, run `set_short` like this:
+        "watdo set_short sum <paste message id/link here>"
+        Now, whenever you send "sum", "watdo summary" will run."""
         if not message.content.startswith(str(self.bot.command_prefix)):
             await ctx.send(f'"{message.content}" is not a command ❌')
             return

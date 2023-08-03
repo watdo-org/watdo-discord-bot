@@ -39,6 +39,9 @@ class BaseCog(dc.Cog):
             if t == "bool":
                 t = "yes/no"
 
+            if t == "Message":
+                t = "message link/id"
+
             if t in ("int", "float"):
                 t = "number"
 
