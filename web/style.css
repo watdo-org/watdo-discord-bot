@@ -99,12 +99,13 @@ code.error {
 .inputs-section > * {
     display: inline-block;
     margin: 8px 5px;
+    width: 100%;
 }
 
 .outputs-section {
-    width: 40%;
+    width: 50%;
     background-color: var(--bg2);
-    padding: 10px 20px 10px 30px;
+    padding: 10px 20px 15px 30px;
     border-left: 5px solid var(--primary);
     overflow: scroll;
 }
