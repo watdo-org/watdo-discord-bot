@@ -140,6 +140,7 @@ class Tasks(BaseCog):
     async def do_priority(
         self,
         ctx: dc.Context[Bot],
+        as_text: bool = False,
         category: Optional[str] = None,
     ) -> None:
         """Show priority tasks."""
@@ -153,6 +154,23 @@ class Tasks(BaseCog):
 
         if not tasks:
             await ctx.send("No tasks.")
+            return
+
+        if as_text:
+            res = []
+
+            for i, t in enumerate(tasks):
+                author = "📝"
+
+                if t.is_recurring:
+                    author = "🔁"
+                elif t.due_date:
+                    author = "🔔"
+
+                p = f"{'📌 ' if t.is_important.value else ''}{author} [{t.category.value}]"
+                res.append(f"{i + 1}. {p} {t.title.value}")
+
+            await ctx.send("\n".join(res))
             return
 
         paged_embed = PagedEmbed(self.bot)
