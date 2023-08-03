@@ -8,7 +8,11 @@ class Miscellaneous(BaseCog):
     @dc.command()
     async def help(self, ctx: dc.Context[Bot]) -> None:
         """Show this help message."""
-        embed = Embed(self.bot, "HELP")
+        embed = Embed(
+            self.bot,
+            "HELP",
+            description="**Website:** https://nietsuu.github.io/watdo",
+        )
 
         for cog in self.bot.cogs.values():
             commands = cog.get_commands()
@@ -22,7 +26,7 @@ class Miscellaneous(BaseCog):
                 names = " or ".join(f"`{n}`" for n in [c.name] + list(c.aliases))
                 params = self.parse_params(c)
                 new_line = "\n" if params else ""
-                cmds.append(f"{names}{new_line}{params}\n> {c.help}")
+                cmds.append(f"{names}{new_line}{params}\n{c.help}")
 
             embed.add_field(name=cog.qualified_name, value="\n\n".join(cmds))
 

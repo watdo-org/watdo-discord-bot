@@ -66,7 +66,8 @@ class Tasks(BaseCog):
         is_important: bool,
         due: Optional[str] = None,
     ) -> None:
-        """Add a task to do."""
+        """Add a task to do.
+        Use this please: https://nietsuu.github.io/watdo"""
         uid = str(ctx.author.id)
         user = await self.db.get_user_data(uid)
 
