@@ -1,14 +1,14 @@
 import math
 import time
 import datetime as dt
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Dict
 import recurrent
 import dateparser
 import discord
 from discord.ext import commands as dc
 from watdo.models import Task, User
 from watdo.discord import Bot
-from watdo.safe_data import Timestamp, UTCOffsetHour
+from watdo.safe_data import Timestamp, UTCOffsetHour, String
 from watdo.discord.cogs import BaseCog
 from watdo.discord.embeds import Embed, TaskEmbed, PagedEmbed
 
@@ -19,11 +19,45 @@ class Tasks(BaseCog):
         """Show the summary of all your tasks."""
         tasks = await self.db.get_user_tasks(str(ctx.author.id))
         embed = Embed(self.bot, "TASKS SUMMARY")
-        embed.add_field(name="Total", value=len(tasks))
-        embed.add_field(
-            name="Important",
-            value=sum(1 for t in tasks if t.is_important.value),
-        )
+
+        total = 0
+        is_important = 0
+        recurring = 0
+        done = 0
+        max_categ_len = 0
+        categories: Dict[str, int] = {}
+
+        for task in tasks:
+            total += 1
+
+            if task.is_important.value:
+                is_important += 1
+
+            if isinstance(task.due, String):
+                recurring += 1
+
+            if task.is_done:
+                done += 1
+
+            if len(task.category.value) > max_categ_len:
+                max_categ_len = len(task.category.value)
+
+            try:
+                categories[task.category.value] += 1
+            except KeyError:
+                categories[task.category.value] = 1
+
+        embed.add_field(name="Total", value=total)
+        embed.add_field(name="Important", value=is_important)
+        embed.add_field(name="Recurring", value=recurring)
+        embed.add_field(name="Done", value=done)
+
+        if categories:
+            c = "\n".join(
+                f"{k.ljust(max_categ_len)} {v}" for k, v in categories.items()
+            )
+            embed.add_field(name="Categories", value=f"```\n{c}\n```")
+
         await ctx.send(embed=embed)
 
     def _parse_due(self, due: str, utc_offset_hour: float) -> Optional[float | str]:
