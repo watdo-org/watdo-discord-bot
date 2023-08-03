@@ -76,8 +76,14 @@ class Database:
     async def get_command_shortcut(self, uid: str, name: str) -> Optional[str]:
         return await self._cache.hget(f"shortcuts.{uid}", name)
 
+    async def get_all_command_shortcuts(self, uid: str) -> Dict[str, str]:
+        return await self._cache.hgetall(f"shortcuts.{uid}")
+
     async def set_command_shortcut(self, uid: str, name: str, command: str) -> None:
         await self._cache.hset(f"shortcuts.{uid}", key=name, value=command)
+
+    async def delete_command_shortcut(self, uid: str, name: str) -> int:
+        return await self._cache.hdel(f"shortcuts.{uid}", name)
 
 
 class DatabaseCache:
@@ -123,6 +129,12 @@ class DatabaseCache:
         await self.db._connection.lset(key, index, value)
         self._list_cache[key][index] = value
 
+    async def hgetall(self, name: str) -> Dict[str, str]:
+        data = await self.db._connection.hgetall(name)
+        data = {k.decode(): v.decode() for k, v in data.items()}
+        self._hash_cache[name] = data
+        return data
+
     async def hget(self, name: str, key: str) -> Optional[str]:
         cache = self._hash_cache.get(name)
 
@@ -152,3 +164,14 @@ class DatabaseCache:
             await self.hget(name, key)
 
         self._hash_cache[name][key] = value
+
+    async def hdel(self, name: str, *keys: str) -> int:
+        deleted_count = await self.db._connection.hdel(name, *keys)
+
+        for key in keys:
+            try:
+                del self._hash_cache[name][key]
+            except KeyError:
+                pass
+
+        return deleted_count

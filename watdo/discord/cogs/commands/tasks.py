@@ -128,7 +128,7 @@ class Tasks(BaseCog):
         task = await self.db.get_user_task(str(ctx.author.id), title)
 
         if task is None:
-            await ctx.send(f'"{title}" not found ❌')
+            await ctx.send(f'Task "{title}" not found ❌')
             return None, None
 
         message = await ctx.send("Are you sure?", embed=TaskEmbed(self.bot, task))
