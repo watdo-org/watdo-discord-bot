@@ -1,3 +1,4 @@
+from typing import Optional
 from discord.ext import commands as dc
 from watdo.discord import Bot
 from watdo.discord.cogs import BaseCog
@@ -5,13 +6,40 @@ from watdo.discord.embeds import Embed
 
 
 class Miscellaneous(BaseCog):
+    async def command_help(self, ctx: dc.Context[Bot], command_name: str) -> None:
+        embed = Embed(self.bot, "Command Help")
+        command = self.bot.get_command(command_name)
+
+        if command is None:
+            await ctx.send(f'Command "{command_name}" not found ❌')
+            return
+
+        embed.description = (
+            " or ".join(f"`{n}`" for n in [command.name] + list(command.aliases))
+            + f"\n{command.help}"
+        )
+
+        for param in self.parse_params_list(command):
+            embed.add_field(
+                name=f"{param.value}{' - optional' if not param.is_required else ''}",
+                value=param.description or "No description.",
+                inline=False,
+            )
+
+        await ctx.send(embed=embed)
+
     @dc.command()
-    async def help(self, ctx: dc.Context[Bot]) -> None:
+    async def help(self, ctx: dc.Context[Bot], command: Optional[str] = None) -> None:
         """Show this help message."""
+        if command is not None:
+            await self.command_help(ctx, command)
+            return
+
         embed = Embed(
             self.bot,
             "HELP",
-            description="**Website:** https://nietsuu.github.io/watdo",
+            description="**Website:** https://nietsuu.github.io/watdo\n"
+            "Type `watdo help [command]` for detailed command help.",
         )
 
         for cog in self.bot.cogs.values():

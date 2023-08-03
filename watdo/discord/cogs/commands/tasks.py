@@ -64,7 +64,10 @@ class Tasks(BaseCog):
         title: str,
         category: str,
         is_important: bool,
-        due: Optional[str] = None,
+        due: Optional[str] = dc.parameter(
+            default=None,
+            description='**Examples:**\n"tomorrow at 5PM"\n"every morning"\n"in 3 hours"',
+        ),
         description: Optional[str] = None,
     ) -> None:
         """Add a task to do.

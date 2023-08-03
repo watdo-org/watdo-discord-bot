@@ -1,5 +1,6 @@
 import asyncio
-from typing import TYPE_CHECKING, Any, Dict, Callable, Awaitable, List
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any, Dict, Callable, Awaitable, List, Optional
 import discord
 from discord.ext import commands as dc
 from watdo.database import Database
@@ -8,13 +9,22 @@ if TYPE_CHECKING:
     from watdo.discord import Bot
 
 
+@dataclass(kw_only=True)
+class ParsedCommandParam:
+    value: str
+    is_required: bool
+    description: Optional[str]
+
+
 class BaseCog(dc.Cog):
     def __init__(self, bot: "Bot", database: Database) -> None:
         self.bot = bot
         self.db = database
 
     @staticmethod
-    def parse_params(command: dc.Command[Any, Any, Any]) -> str:
+    def parse_params_list(
+        command: dc.Command[Any, Any, Any]
+    ) -> List[ParsedCommandParam]:
         params = []
 
         for param in command.clean_params.values():
@@ -41,8 +51,19 @@ class BaseCog(dc.Cog):
             else:
                 p = f"[{p}]"
 
-            params.append(p)
+            params.append(
+                ParsedCommandParam(
+                    value=p,
+                    is_required=param.required,
+                    description=param.description,
+                )
+            )
 
+        return params
+
+    @staticmethod
+    def parse_params(command: dc.Command[Any, Any, Any]) -> str:
+        params = [p.value for p in BaseCog.parse_params_list(command)]
         return " ".join(params)
 
     async def wait_for_confirmation(
