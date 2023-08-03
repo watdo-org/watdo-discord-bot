@@ -73,12 +73,19 @@ class Database:
     async def set_user_data(self, uid: str, data: User) -> None:
         await self._cache.set(f"user.{uid}", data.as_json_str())
 
+    async def get_command_shortcut(self, uid: str, name: str) -> Optional[str]:
+        return await self._cache.hget(f"shortcuts.{uid}", name)
+
+    async def set_command_shortcut(self, uid: str, name: str, command: str) -> None:
+        await self._cache.hset(f"shortcuts.{uid}", key=name, value=command)
+
 
 class DatabaseCache:
     def __init__(self, database: Database) -> None:
         self.db = database
         self._str_cache: Dict[str, str] = {}
         self._list_cache: Dict[str, List[str]] = {}
+        self._hash_cache: Dict[str, Dict[str, str]] = {}
 
     async def get(self, key: str) -> Optional[str]:
         data = self._str_cache.get(key) or await self.db._connection.get(key)
@@ -115,3 +122,33 @@ class DatabaseCache:
     async def lset(self, key: str, index: int, value: str) -> None:
         await self.db._connection.lset(key, index, value)
         self._list_cache[key][index] = value
+
+    async def hget(self, name: str, key: str) -> Optional[str]:
+        cache = self._hash_cache.get(name)
+
+        if cache is None:
+            data = await self.db._connection.hget(name, key)
+        else:
+            data = cache.get(key) or await self.db._connection.hget(name, key)
+
+        if data is None:
+            return None
+
+        data = data.decode() if isinstance(data, bytes) else data
+
+        try:
+            self._hash_cache[name][key] = data
+        except KeyError:
+            self._hash_cache[name] = {key: data}
+
+        return data
+
+    async def hset(self, name: str, *, key: str, value: str) -> None:
+        await self.db._connection.hset(name, key=key, value=value)
+
+        try:
+            self._hash_cache[name]
+        except KeyError:
+            await self.hget(name, key)
+
+        self._hash_cache[name][key] = value

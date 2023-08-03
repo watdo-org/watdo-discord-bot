@@ -65,15 +65,29 @@ class Bot(dc.Bot):
         if message.author.id == bot_user.id:
             return
 
-        if bot_user.mention in message.content.replace("<@!", "<@"):
-            await message.reply(f"Type `{self.command_prefix}help` for help.")
+        if not message.content.startswith(str(self.command_prefix)):
+            self.loop.create_task(self.process_shortcut_commands(message))
 
-        if message.channel.id == 1028932255256682536:
-            if IS_DEV:
-                await self.process_commands(message)
+            if bot_user.mention in message.content.replace("<@!", "<@"):
+                await message.reply(f"Type `{self.command_prefix}help` for help.")
+
         else:
-            if not IS_DEV:
-                await self.process_commands(message)
+            if message.channel.id == 1028932255256682536:
+                if IS_DEV:
+                    await self.process_commands(message)
+            else:
+                if not IS_DEV:
+                    await self.process_commands(message)
+
+    async def process_shortcut_commands(self, message: discord.Message) -> None:
+        command = await self.db.get_command_shortcut(
+            str(message.author.id),
+            message.content,
+        )
+
+        if command is not None:
+            message.content = command
+            await self.process_commands(message)
 
     async def _on_ready_event(self) -> None:
         Reminder(self.loop, self.db, self).start()
