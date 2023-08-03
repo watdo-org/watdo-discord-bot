@@ -140,8 +140,8 @@ class Tasks(BaseCog):
     async def do_priority(
         self,
         ctx: dc.Context[Bot],
-        as_text: bool = False,
         category: Optional[str] = None,
+        as_text: bool = False,
     ) -> None:
         """Show priority tasks."""
         tasks = await self.db.get_user_tasks(
