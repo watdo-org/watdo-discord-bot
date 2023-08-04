@@ -30,7 +30,7 @@ class Database:
         tasks = []
         tasks_data = await self._cache.lrange(f"tasks.{uid}")
 
-        for raw_data in tasks_data:
+        for task_index, raw_data in enumerate(tasks_data):
             data = json.loads(raw_data)
 
             try:
@@ -46,6 +46,8 @@ class Database:
 
                 if reraise:
                     raise error
+
+                await self._cache.lset(f"tasks.{uid}", task_index, task.as_json_str())
 
             if ignore_done and task.is_done:
                 continue
