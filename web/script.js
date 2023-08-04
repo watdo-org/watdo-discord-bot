@@ -32,6 +32,7 @@ class Command {
                 setTimeout(() => {
                     this.updateValue();
                     this.element.classList.remove("success");
+                    location.reload();
                 }, 1000);
             } else {
                 this.element.classList.add("error");
