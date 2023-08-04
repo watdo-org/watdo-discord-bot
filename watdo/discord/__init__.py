@@ -62,6 +62,13 @@ class Bot(dc.Bot):
     async def on_message(self, message: discord.Message) -> None:
         bot_user = cast(discord.User, self.user)
 
+        if message.channel.id == 1028932255256682536:
+            if not IS_DEV:
+                return
+        else:
+            if IS_DEV:
+                return
+
         if message.author.id == bot_user.id:
             return
 
@@ -72,12 +79,7 @@ class Bot(dc.Bot):
                 await message.reply(f"Type `{self.command_prefix}help` for help.")
 
         else:
-            if message.channel.id == 1028932255256682536:
-                if IS_DEV:
-                    await self.process_commands(message)
-            else:
-                if not IS_DEV:
-                    await self.process_commands(message)
+            await self.process_commands(message)
 
     async def process_shortcut_commands(self, message: discord.Message) -> None:
         command = await self.db.get_command_shortcut(
