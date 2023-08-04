@@ -1,4 +1,8 @@
-from typing import Optional
+import os
+import json
+import shutil
+from typing import Optional, Dict, Any
+import discord
 from discord.ext import commands as dc
 from watdo.discord import Bot
 from watdo.discord.cogs import BaseCog
@@ -68,6 +72,34 @@ class Miscellaneous(BaseCog):
     async def ping(self, ctx: dc.Context[Bot]) -> None:
         """Show the server latency."""
         await ctx.send(f"Pong! **{round(self.bot.latency * 1000)}ms**")
+
+    @dc.command()
+    async def download_data(self, ctx: dc.Context[Bot]) -> None:
+        """Download a copy of your data for backup purpose.
+        It is recommended to run this command on my DM channel to avoid other users from seeing your data.
+        """
+        uid = str(ctx.author.id)
+        data: Dict[str, Any] = {}
+
+        user_data = await self.db.get_user_data(uid)
+
+        data["user"] = user_data.as_json() if user_data else None
+        data["tasks"] = [t.as_json() for t in await self.db.get_user_tasks(uid)]
+        data["archived_tasks"] = await self.db.get_all_command_shortcuts(uid)
+
+        folder = f"__TEMP__.{uid}"
+        filename = "watdo.data.json"
+        filepath = os.path.join(folder, filename)
+
+        os.makedirs(folder, exist_ok=True)
+
+        with open(filepath, "w") as file:
+            json.dump(data, file, indent=4)
+
+        with open(filepath) as file:
+            await ctx.send(file=discord.File(file, filename=filename, spoiler=True))
+
+        shutil.rmtree(folder, ignore_errors=True)
 
 
 async def setup(bot: Bot) -> None:
