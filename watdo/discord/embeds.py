@@ -31,9 +31,9 @@ class TaskEmbed(Embed):
         author = "📝"
 
         if task.is_recurring:
-            author = "🔁"
+            author = "🔁" if task.has_reminder.value else "🔕 🔁"
         elif task.due_date:
-            author = "🔔"
+            author = "🔔" if task.has_reminder.value else "🔕"
 
         self.set_author(
             name=f"{'📌 ' if task.is_important.value else ''}"

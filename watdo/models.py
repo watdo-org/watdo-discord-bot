@@ -53,6 +53,7 @@ class Task(Model):
         is_important: bool,
         due: Optional[float | str],
         description: Optional[str] = None,
+        has_reminder: bool = True,
         last_done: Optional[float] = None,
         next_reminder: Optional[float] = None,
         created_at: float,
@@ -64,6 +65,7 @@ class Task(Model):
         self.description = (
             String(description, min_len=0, max_len=1000) if description else None
         )
+        self.has_reminder = Boolean(has_reminder)
         self.last_done = Timestamp(last_done) if last_done else None
         self.next_reminder = Timestamp(next_reminder) if next_reminder else None
 

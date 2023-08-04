@@ -107,6 +107,7 @@ class Tasks(BaseCog):
             description='**Examples:**\n"tomorrow at 5PM"\n"every morning"\n"in 3 hours"',
         ),
         description: Optional[str] = None,
+        has_reminder: bool = True,
     ) -> None:
         """Add a task to do.
         Use this please: https://nietsuu.github.io/watdo"""
@@ -131,6 +132,7 @@ class Tasks(BaseCog):
             is_important=is_important,
             due=self._parse_due(due, user.utc_offset_hour.value) if due else None,
             description=description,
+            has_reminder=has_reminder,
             created_at=time.time(),
         )
 
@@ -167,11 +169,14 @@ class Tasks(BaseCog):
                 author = "📝"
 
                 if t.is_recurring:
-                    author = "🔁"
+                    author = "🔁" if t.has_reminder.value else "🔕 🔁"
                 elif t.due_date:
-                    author = "🔔"
+                    author = "🔔" if t.has_reminder.value else "🔕"
 
-                p = f"{'📌 ' if t.is_important.value else ''}{author} [{t.category.value}]"
+                p = (
+                    f"{'📌 ' if t.is_important.value else ''}"
+                    f"{author} [{t.category.value}]"
+                )
                 res.append(f"{i + 1}. {p} {t.title.value}")
 
             await ctx.send("\n".join(res))

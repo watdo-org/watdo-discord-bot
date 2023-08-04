@@ -35,7 +35,7 @@ class Reminder:
                         if user is None:
                             continue
 
-                        if not task.is_done:
+                        if not task.is_done and task.has_reminder.value:
                             self.bot.loop.create_task(
                                 user.send(
                                     "Please do this task!!",
