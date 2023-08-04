@@ -35,7 +35,7 @@ class Shortcuts(BaseCog, description="Speed up your workflow with command shortc
         for name, command in data.items():
             message.append(f"```\n{command}\n```{name}\n")
 
-        await ctx.send("".join(message) or "No command shortcuts ❌")
+        await ctx.send("".join(message)[:2000] or "No command shortcuts ❌")
 
     @dc.command()
     async def delete_short(self, ctx: dc.Context[Bot], name: str) -> None:

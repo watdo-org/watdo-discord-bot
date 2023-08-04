@@ -66,7 +66,9 @@ class Tasks(BaseCog):
             c = "\n".join(
                 f"{k.ljust(max_categ_len)} {v}" for k, v in categories.items()
             )
-            embed.add_field(name="Categories", value=f"```\n{c}\n```", inline=False)
+            embed.add_field(
+                name="Categories", value=f"```\n{c[:1000]}\n```", inline=False
+            )
 
         await ctx.send(embed=embed)
 
@@ -185,7 +187,7 @@ class Tasks(BaseCog):
                 )
                 res.append(f"{i + 1}. {p} {t.title.value}")
 
-            await ctx.send("\n".join(res))
+            await ctx.send("\n".join(res)[:2000])
             return
 
         paged_embed = PagedEmbed(self.bot)
