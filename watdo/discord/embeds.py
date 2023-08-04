@@ -27,7 +27,7 @@ class Embed(discord.Embed):
 
 class TaskEmbed(Embed):
     def __init__(self, bot: "Bot", task: Task) -> None:
-        super().__init__(bot, task.title.value, timestamp=task.due_date)
+        super().__init__(bot, task.title.value)
         author = "📝"
 
         if task.is_recurring:
@@ -52,18 +52,25 @@ class TaskEmbed(Embed):
                 .replace(" ", " \u200b"),
             )
 
+        if task.due_date is not None:
+            self.add_field(
+                name="Due Date",
+                value=f"{humanize.naturaldate(task.due_date).capitalize()}\n"
+                f"{humanize.naturaltime(task.due_date)}",
+            )
+
         self.add_field(
             name="Created",
-            value=f"{humanize.naturaldate(task.date_created).capitalize()} "
-            f"({humanize.naturaltime(task.date_created)})",
+            value=f"{humanize.naturaldate(task.date_created).capitalize()}\n"
+            f"{humanize.naturaltime(task.date_created)}",
         )
 
         if task.last_done is not None:
             last_done_date = cast(dt.datetime, task.last_done_date)
             self.add_field(
                 name="Last Done",
-                value=f"{humanize.naturaldate(last_done_date).capitalize()} "
-                f"({humanize.naturaltime(last_done_date)})",
+                value=f"{humanize.naturaldate(last_done_date).capitalize()}\n"
+                f"{humanize.naturaltime(last_done_date)}",
             )
 
 
