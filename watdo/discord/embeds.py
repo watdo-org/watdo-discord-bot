@@ -170,7 +170,7 @@ class PagedEmbed:
                 # go to the last page
                 self.current = len(self) - 1
             elif reaction == self.controls["extract"]:
-                ctx.bot.loop.create_task(message.edit(embeds=self.pages))
+                ctx.bot.loop.create_task(message.edit(embeds=self.pages[:10]))
                 break
             elif reaction in self._custom_buttons:
                 await self._custom_buttons[reaction](self.pages[self.current])

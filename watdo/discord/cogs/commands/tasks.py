@@ -158,7 +158,7 @@ class Tasks(BaseCog):
         """Show priority tasks."""
         tasks = await self.db.get_user_tasks(
             str(ctx.author.id),
-            category=category,
+            category=category or None,
             ignore_done=True,
         )
         tasks.sort(key=lambda t: t.is_important.value, reverse=True)
