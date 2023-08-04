@@ -22,6 +22,7 @@ class Tasks(BaseCog):
 
         total = 0
         is_important = 0
+        overdue = 0
         recurring = 0
         one_time = 0
         done = 0
@@ -33,6 +34,10 @@ class Tasks(BaseCog):
 
             if task.is_important.value:
                 is_important += 1
+
+            if task.due_date is not None:
+                if task.due_date < dt.datetime.now():
+                    overdue += 1
 
             if isinstance(task.due, String):
                 recurring += 1
@@ -52,6 +57,7 @@ class Tasks(BaseCog):
 
         embed.add_field(name="Total", value=total)
         embed.add_field(name="Important", value=is_important)
+        embed.add_field(name="Overdue", value=overdue)
         embed.add_field(name="Recurring", value=recurring)
         embed.add_field(name="One-Time", value=one_time)
         embed.add_field(name="Done", value=done)
