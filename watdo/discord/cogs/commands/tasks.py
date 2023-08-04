@@ -23,6 +23,7 @@ class Tasks(BaseCog):
         total = 0
         is_important = 0
         recurring = 0
+        one_time = 0
         done = 0
         max_categ_len = 0
         categories: Dict[str, int] = {}
@@ -35,6 +36,8 @@ class Tasks(BaseCog):
 
             if isinstance(task.due, String):
                 recurring += 1
+            else:
+                one_time += 1
 
             if task.is_done:
                 done += 1
@@ -50,13 +53,14 @@ class Tasks(BaseCog):
         embed.add_field(name="Total", value=total)
         embed.add_field(name="Important", value=is_important)
         embed.add_field(name="Recurring", value=recurring)
+        embed.add_field(name="One-Time", value=one_time)
         embed.add_field(name="Done", value=done)
 
         if categories:
             c = "\n".join(
                 f"{k.ljust(max_categ_len)} {v}" for k, v in categories.items()
             )
-            embed.add_field(name="Categories", value=f"```\n{c}\n```")
+            embed.add_field(name="Categories", value=f"```\n{c}\n```", inline=False)
 
         await ctx.send(embed=embed)
 
