@@ -8,6 +8,7 @@ class Command {
             "Is Important": document.querySelector("input[name='Is Important']"),
             "Due": document.querySelector("input[placeholder='Due']"),
             "Description": document.querySelector("textarea[placeholder='Description']"),
+            "Remind": document.querySelector("input[name='Remind']"),
         };
         this.updateValue();
 
@@ -53,12 +54,16 @@ class Command {
 
             if (element.hasAttribute("required")) {
                 element.style.border = "0.5px solid var(--primary)";
+
+                if (element.getAttribute("type") === "checkbox") {
+                    element.nextElementSibling.style.color = "var(--primary)";
+                }
             }
         }
     }
 
     updateValue() {
-        const i = {};
+        const i = [];
 
         for (const key in this.inputs) {
             if (!this.inputs.hasOwnProperty(key)) continue;
@@ -76,11 +81,10 @@ class Command {
                 value = `"${value}"`;
             }
 
-            i[key] = value || '""';
+            i.push(value || '""');
         }
 
-        this.value = `watdo todo ${i['Title']} ${i['Category']} ` +
-            `${i['Is Important']} ${i['Due']} ${i['Description']}`;
+        this.value = `watdo todo ${i.join(" ")}`;
         this.value = this.value.replaceAll("\n", "\\n");
         this.element.textContent = this.value;
     }

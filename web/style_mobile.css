@@ -7,5 +7,6 @@
         width: 100%;
         border-left: none;
         border-top: 5px solid var(--primary);
+        padding-bottom: 20px;
     }
 }
