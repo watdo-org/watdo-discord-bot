@@ -1,12 +1,12 @@
 import math
 import time
-import datetime as dt
 from typing import Optional, Tuple, Dict
 import recurrent
 import dateparser
 import discord
 from discord.ext import commands as dc
-from watdo.models import Task, User
+from watdo import dt
+from watdo.models import Task
 from watdo.discord import Bot
 from watdo.safe_data import Timestamp, UTCOffsetHour, String
 from watdo.discord.cogs import BaseCog
@@ -17,7 +17,11 @@ class Tasks(BaseCog):
     @dc.command()
     async def summary(self, ctx: dc.Context[Bot]) -> None:
         """Show the summary of all your tasks."""
-        tasks = await self.db.get_user_tasks(str(ctx.author.id))
+        user = await self.get_user_data(ctx)
+        utc_offset_hour = user.utc_offset_hour.value
+        tasks = await self.db.get_user_tasks(
+            str(ctx.author.id), utc_offset_hour=utc_offset_hour
+        )
         embed = Embed(self.bot, "TASKS SUMMARY")
 
         total = 0
@@ -35,8 +39,10 @@ class Tasks(BaseCog):
             if task.is_important.value:
                 is_important += 1
 
-            if task.due_date is not None:
-                if task.due_date < dt.datetime.now():
+            task_due_date = task.due_date
+
+            if task_due_date is not None:
+                if task_due_date < dt.date_now(user.utc_offset_hour.value):
                     overdue += 1
 
             if isinstance(task.due, String):
@@ -76,19 +82,23 @@ class Tasks(BaseCog):
         date = dateparser.parse(due)
 
         if date is not None:
+            date = date.replace(tzinfo=dt.utc_offset_hour_to_tz(utc_offset_hour))
             return date.timestamp()
 
-        rr: Optional[str | dt.datetime] = recurrent.parse(due)
+        rr: Optional[str | dt.datetime] = recurrent.parse(
+            due,
+            now=dt.date_now(utc_offset_hour),
+        )
 
         if isinstance(rr, str):
             if "DTSTART:" not in rr:
-                date_now = dt.datetime.now()
+                date_now = dt.date_now(utc_offset_hour)
                 d = date_now.strftime("%Y%m%dT%H%M%S")
                 rr = f"DTSTART:{d}\n{rr}"
 
             return rr
 
-        if isinstance(rr, dt.datetime):
+        if isinstance(rr, dt.datetime_type):
             return rr.timestamp()
 
         return None
@@ -120,35 +130,26 @@ class Tasks(BaseCog):
         """Add a task to do.
         Use this please: https://nietsuu.github.io/watdo"""
         uid = str(ctx.author.id)
-        user = await self.db.get_user_data(uid)
-
-        if user is None:
-            utc_offset = (
-                await self.interview(
-                    ctx,
-                    questions={
-                        "What is your UTC offset?": self._validate_utc_offset,
-                    },
-                )
-            )[0]
-            user = User(utc_offset_hour=utc_offset, created_at=time.time())
-            await self.db.set_user_data(uid, user)
-
+        user = await self.get_user_data(ctx)
+        utc_offset_hour = user.utc_offset_hour.value
         task = Task(
             title=title,
             category=category,
             is_important=is_important,
+            utc_offset_hour=utc_offset_hour,
             due=self._parse_due(due, user.utc_offset_hour.value) if due else None,
             description=description,
             has_reminder=has_reminder,
             created_at=time.time(),
         )
 
-        if task.due_date:
-            task.next_reminder = Timestamp(task.due_date.timestamp())
+        task_due_date = task.due_date
+
+        if task_due_date:
+            task.next_reminder = Timestamp(task_due_date.timestamp())
 
         await self.db.add_user_task(uid, task)
-        await ctx.send(embed=TaskEmbed(self.bot, task))
+        await ctx.send(embed=TaskEmbed(self.bot, task, utc_offset_hour=utc_offset_hour))
 
     @dc.command(aliases=["do"])
     async def do_priority(
@@ -158,10 +159,13 @@ class Tasks(BaseCog):
         as_text: bool = False,
     ) -> None:
         """Show priority tasks."""
+        user = await self.get_user_data(ctx)
+        utc_offset_hour = user.utc_offset_hour.value
         tasks = await self.db.get_user_tasks(
             str(ctx.author.id),
             category=category or None,
             ignore_done=True,
+            utc_offset_hour=utc_offset_hour,
         )
         tasks.sort(key=lambda t: t.is_important.value, reverse=True)
         tasks.sort(key=lambda t: t.due_date.timestamp() if t.due_date else math.inf)
@@ -191,19 +195,41 @@ class Tasks(BaseCog):
             return
 
         paged_embed = PagedEmbed(self.bot)
-        paged_embed.add_pages(*(TaskEmbed(self.bot, t) for t in tasks))
+        paged_embed.add_pages(
+            *(
+                TaskEmbed(
+                    self.bot,
+                    t,
+                    utc_offset_hour=utc_offset_hour,
+                )
+                for t in tasks
+            )
+        )
         paged_embed.send(ctx)
 
     async def _confirm_task_action(
         self, ctx: dc.Context[Bot], title: str
     ) -> Tuple[Optional[discord.Message], Optional[Task]]:
-        task = await self.db.get_user_task(str(ctx.author.id), title)
+        user = await self.get_user_data(ctx)
+        utc_offset_hour = user.utc_offset_hour.value
+        task = await self.db.get_user_task(
+            str(ctx.author.id),
+            title=title,
+            utc_offset_hour=utc_offset_hour,
+        )
 
         if task is None:
             await ctx.send(f'Task "{title}" not found ❌')
             return None, None
 
-        message = await ctx.send("Are you sure?", embed=TaskEmbed(self.bot, task))
+        message = await ctx.send(
+            "Are you sure?",
+            embed=TaskEmbed(
+                self.bot,
+                task,
+                utc_offset_hour=utc_offset_hour,
+            ),
+        )
         is_confirm = await self.wait_for_confirmation(ctx, message)
 
         if is_confirm:
@@ -218,9 +244,15 @@ class Tasks(BaseCog):
         message, task = await self._confirm_task_action(ctx, title)
 
         if (message is not None) and (task is not None):
+            user = await self.get_user_data(ctx)
             old_task_str = task.as_json_str()
             task.last_done = Timestamp(time.time())
-            await self.db.set_user_task(uid, old_task_str, task)
+            await self.db.set_user_task(
+                uid,
+                old_task_str=old_task_str,
+                new_task=task,
+                utc_offset_hour=user.utc_offset_hour.value,
+            )
 
             if not task.is_recurring:
                 await self.db.remove_user_task(uid, task)

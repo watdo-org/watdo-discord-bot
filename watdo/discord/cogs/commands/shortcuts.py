@@ -4,7 +4,7 @@ from watdo.discord import Bot
 from watdo.discord.cogs import BaseCog
 
 
-class Shortcuts(BaseCog, description="Speed up your workflow with command shortcuts."):
+class Shortcuts(BaseCog, description="Speed up your workflow with command shortcuts."):  # type: ignore[call-arg]
     @dc.command()
     async def set_short(
         self,

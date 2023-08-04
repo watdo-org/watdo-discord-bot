@@ -1,8 +1,10 @@
+import time
 import asyncio
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Dict, Callable, Awaitable, List, Optional
 import discord
 from discord.ext import commands as dc
+from watdo.models import User
 from watdo.database import Database
 
 if TYPE_CHECKING:
@@ -129,3 +131,21 @@ class BaseCog(dc.Cog):
             answers.append(answer)
 
         return answers
+
+    async def get_user_data(self, ctx: dc.Context["Bot"]) -> User:
+        uid = str(ctx.author.id)
+        user = await self.db.get_user_data(uid)
+
+        if user is None:
+            utc_offset = (
+                await self.interview(
+                    ctx,
+                    questions={
+                        "What is your UTC offset?": self._validate_utc_offset,
+                    },
+                )
+            )[0]
+            user = User(utc_offset_hour=utc_offset, created_at=time.time())
+            await self.db.set_user_data(uid, user)
+
+        return user

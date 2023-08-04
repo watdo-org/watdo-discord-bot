@@ -1,5 +1,4 @@
 import asyncio
-import datetime as dt
 from typing import (
     TYPE_CHECKING,
     cast,
@@ -14,6 +13,7 @@ from typing import (
 import humanize
 import discord
 from discord.ext import commands as dc
+from watdo import dt
 from watdo.models import Task
 
 if TYPE_CHECKING:
@@ -26,7 +26,7 @@ class Embed(discord.Embed):
 
 
 class TaskEmbed(Embed):
-    def __init__(self, bot: "Bot", task: Task) -> None:
+    def __init__(self, bot: "Bot", task: Task, *, utc_offset_hour: float) -> None:
         super().__init__(bot, task.title.value)
         author = "📝"
 
@@ -55,22 +55,22 @@ class TaskEmbed(Embed):
         if task.due_date is not None:
             self.add_field(
                 name="Due Date",
-                value=f"{humanize.naturaldate(task.due_date).capitalize()}\n"
-                f"{humanize.naturaltime(task.due_date)}",
+                value=f"{humanize.naturaldate(task.due_date.astimezone()).capitalize()}\n"
+                f"{task.due_date.strftime('%I:%M %p')}",
             )
 
         self.add_field(
             name="Created",
-            value=f"{humanize.naturaldate(task.date_created).capitalize()}\n"
-            f"{humanize.naturaltime(task.date_created)}",
+            value=f"{humanize.naturaldate(task.date_created.astimezone()).capitalize()}\n"
+            f"{task.date_created.strftime('%I:%M %p')}",
         )
 
         if task.last_done is not None:
             last_done_date = cast(dt.datetime, task.last_done_date)
             self.add_field(
                 name="Last Done",
-                value=f"{humanize.naturaldate(last_done_date).capitalize()}\n"
-                f"{humanize.naturaltime(last_done_date)}",
+                value=f"{humanize.naturaldate(last_done_date.astimezone()).capitalize()}\n"
+                f"{last_done_date.strftime('%I:%M %p')}",
             )
 
 

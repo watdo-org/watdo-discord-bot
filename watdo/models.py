@@ -1,14 +1,15 @@
 import math
 import json
 from abc import ABC
-import datetime as dt
 from typing import cast, Dict, Any, Optional
 from dateutil import rrule
+from watdo import dt
 from watdo.safe_data import SafeData, String, Boolean, Timestamp, UTCOffsetHour
 
 
 class Model(ABC):
-    def __init__(self, *, created_at: float) -> None:
+    def __init__(self, *, utc_offset_hour: float, created_at: float) -> None:
+        self.utc_offset_hour = UTCOffsetHour(utc_offset_hour)
         self.created_at = Timestamp(created_at)
 
         for key, value in self.__dict__.items():
@@ -41,7 +42,7 @@ class Model(ABC):
 
     @property
     def date_created(self) -> dt.datetime:
-        return dt.datetime.fromtimestamp(self.created_at.value)
+        return dt.fromtimestamp(self.created_at.value, self.utc_offset_hour.value)
 
 
 class Task(Model):
@@ -51,6 +52,7 @@ class Task(Model):
         title: str,
         category: str,
         is_important: bool,
+        utc_offset_hour: float,
         due: Optional[float | str],
         description: Optional[str] = None,
         has_reminder: bool = True,
@@ -75,9 +77,11 @@ class Task(Model):
             self.due = Timestamp(due)
         elif isinstance(due, str):
             self.due = String(due, min_len=7, max_len=math.inf)
-            self._rrule = rrule.rrulestr(due)
+            tz = dt.utc_offset_hour_to_tz(utc_offset_hour)
+            dtstart = rrule.rrulestr(due)._dtstart.replace(tzinfo=tz)  # type: ignore[union-attr]
+            self._rrule = rrule.rrulestr(due.split("\n")[1], dtstart=dtstart)
 
-        super().__init__(created_at=created_at)
+        super().__init__(utc_offset_hour=utc_offset_hour, created_at=created_at)
 
     @property
     def rrule(self) -> rrule.rrule:
@@ -94,7 +98,7 @@ class Task(Model):
         due = self.due.value
 
         if isinstance(due, float):
-            return dt.datetime.fromtimestamp(due)
+            return dt.fromtimestamp(due, self.utc_offset_hour.value)
 
         return self._rrule.after(self.last_done_date or self.date_created)
 
@@ -103,7 +107,7 @@ class Task(Model):
         if self.last_done is None:
             return None
 
-        return dt.datetime.fromtimestamp(self.last_done.value)
+        return dt.fromtimestamp(self.last_done.value, self.utc_offset_hour.value)
 
     @property
     def is_recurring(self) -> bool:
@@ -128,5 +132,4 @@ class Task(Model):
 
 class User(Model):
     def __init__(self, *, utc_offset_hour: float, created_at: float) -> None:
-        self.utc_offset_hour = UTCOffsetHour(utc_offset_hour)
-        super().__init__(created_at=created_at)
+        super().__init__(utc_offset_hour=utc_offset_hour, created_at=created_at)

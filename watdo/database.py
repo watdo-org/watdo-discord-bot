@@ -23,6 +23,7 @@ class Database:
         self,
         uid: str,
         *,
+        utc_offset_hour: float,
         category: Optional[str] = None,
         ignore_done: bool = False,
     ) -> List[Task]:
@@ -30,7 +31,21 @@ class Database:
         tasks_data = await self._cache.lrange(f"tasks.{uid}")
 
         for raw_data in tasks_data:
-            task = Task(**json.loads(raw_data))
+            data = json.loads(raw_data)
+
+            try:
+                task = Task(**data)
+            except TypeError as error:
+                reraise = True
+
+                if "required keyword-only argument" in str(error):
+                    if "utc_offset_hour" in str(error):
+                        data["utc_offset_hour"] = utc_offset_hour
+                        task = Task(**data)
+                        reraise = False
+
+                if reraise:
+                    raise error
 
             if ignore_done and task.is_done:
                 continue
@@ -43,8 +58,14 @@ class Database:
 
         return tasks
 
-    async def get_user_task(self, uid: str, title: str) -> Optional[Task]:
-        for task in await self.get_user_tasks(uid):
+    async def get_user_task(
+        self,
+        uid: str,
+        *,
+        title: str,
+        utc_offset_hour: float,
+    ) -> Optional[Task]:
+        for task in await self.get_user_tasks(uid, utc_offset_hour=utc_offset_hour):
             if task.title.value == title:
                 return task
 
@@ -53,8 +74,17 @@ class Database:
     async def add_user_task(self, uid: str, task: Task) -> None:
         await self._cache.lpush(f"tasks.{uid}", task.as_json_str())
 
-    async def set_user_task(self, uid: str, old_task_str: str, new_task: Task) -> None:
-        for index, task in enumerate(await self.get_user_tasks(uid)):
+    async def set_user_task(
+        self,
+        uid: str,
+        *,
+        old_task_str: str,
+        new_task: Task,
+        utc_offset_hour: float,
+    ) -> None:
+        for index, task in enumerate(
+            await self.get_user_tasks(uid, utc_offset_hour=utc_offset_hour)
+        ):
             if task.as_json_str() == old_task_str:
                 await self._cache.lset(f"tasks.{uid}", index, new_task.as_json_str())
                 break
