@@ -85,7 +85,7 @@ class Miscellaneous(BaseCog):
 
         data["user"] = user_data.as_json() if user_data else None
         data["tasks"] = [t.as_json() for t in await self.db.get_user_tasks(uid)]
-        data["archived_tasks"] = await self.db.get_all_command_shortcuts(uid)
+        data["shortcuts"] = await self.db.get_all_command_shortcuts(uid)
 
         folder = f"__TEMP__.{uid}"
         filename = "watdo.data.json"
