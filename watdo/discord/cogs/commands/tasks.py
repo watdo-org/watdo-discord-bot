@@ -128,27 +128,42 @@ class Tasks(BaseCog):
         has_reminder: bool = True,
     ) -> None:
         """Add a task to do.
-        Use this please: https://nietsuu.github.io/watdo"""
+        Use this please: https://nietsuu.github.io/watdo
+        If the title is a duplicate, the old task will be overwritten."""
         uid = str(ctx.author.id)
         user = await self.get_user_data(ctx)
         utc_offset_hour = user.utc_offset_hour.value
+        existing_task = await self.db.get_user_task(
+            uid, title=title, utc_offset_hour=utc_offset_hour
+        )
         task = Task(
             title=title,
             category=category,
             is_important=is_important,
             utc_offset_hour=utc_offset_hour,
-            due=self._parse_due(due, user.utc_offset_hour.value) if due else None,
+            due=self._parse_due(due, utc_offset_hour) if due else None,
             description=description,
             has_reminder=has_reminder,
-            created_at=time.time(),
+            created_at=time.time()
+            if existing_task is None
+            else existing_task.created_at.value,
         )
 
-        task_due_date = task.due_date
+        if task.due_date:
+            task.next_reminder = Timestamp(task.due_date.timestamp())
+        else:
+            task.next_reminder = None
 
-        if task_due_date:
-            task.next_reminder = Timestamp(task_due_date.timestamp())
+        if existing_task is None:
+            await self.db.add_user_task(uid, task)
+        else:
+            await self.db.set_user_task(
+                uid,
+                old_task_str=existing_task.as_json_str(),
+                new_task=task,
+                utc_offset_hour=utc_offset_hour,
+            )
 
-        await self.db.add_user_task(uid, task)
         await ctx.send(embed=TaskEmbed(self.bot, task, utc_offset_hour=utc_offset_hour))
 
     @dc.command(aliases=["do"])

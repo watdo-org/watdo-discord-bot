@@ -49,7 +49,7 @@ class TaskEmbed(Embed):
                 name="Description",
                 value=bytes(task.description.value, "utf-8")
                 .decode("unicode_escape")
-                .replace(" ", " \u200b"),
+                .replace(" ", " \u200c"),
             )
 
         if task.due_date is not None:
