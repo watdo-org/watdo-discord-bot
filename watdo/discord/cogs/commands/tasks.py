@@ -79,10 +79,16 @@ class Tasks(BaseCog):
         await ctx.send(embed=embed)
 
     def _parse_due(self, due: str, utc_offset_hour: float) -> Optional[float | str]:
-        date = dateparser.parse(due)
+        tz = dt.utc_offset_hour_to_tz(utc_offset_hour)
+        date = dateparser.parse(
+            due,
+            settings={
+                "RETURN_AS_TIMEZONE_AWARE": True,
+                "TIMEZONE": tz.tzname(dt.date_now(utc_offset_hour)) or "",
+            },
+        )
 
         if date is not None:
-            date = date.replace(tzinfo=dt.utc_offset_hour_to_tz(utc_offset_hour))
             return date.timestamp()
 
         rr: Optional[str | dt.datetime] = recurrent.parse(
