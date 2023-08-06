@@ -31,7 +31,7 @@ class Reminder:
             if channel is None:
                 channel = user
 
-        content = "Please do this task!!"
+        content = f"⏰ **Reminder** for {user.mention}"
         embed = TaskEmbed(self.bot, task, utc_offset_hour=task.utc_offset_hour.value)
 
         try:

@@ -164,8 +164,10 @@ class Tasks(BaseCog):
             task.next_reminder = None
 
         if existing_task is None:
+            content = "Task added ✅"
             await self.db.add_user_task(uid, task)
         else:
+            content = "Task updated ✅"
             await self.db.set_user_task(
                 uid,
                 old_task_str=existing_task.as_json_str(),
@@ -173,7 +175,10 @@ class Tasks(BaseCog):
                 utc_offset_hour=utc_offset_hour,
             )
 
-        await ctx.send(embed=TaskEmbed(self.bot, task, utc_offset_hour=utc_offset_hour))
+        await ctx.send(
+            content,
+            embed=TaskEmbed(self.bot, task, utc_offset_hour=utc_offset_hour),
+        )
 
     @dc.command(aliases=["do"])
     async def do_priority(
