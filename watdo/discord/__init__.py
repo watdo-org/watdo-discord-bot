@@ -1,5 +1,6 @@
 import os
 import glob
+import logging
 import asyncio
 from typing import cast, Any
 import discord
@@ -9,6 +10,7 @@ from watdo.database import Database
 from watdo.logging import get_logger
 from watdo.reminder import Reminder
 from watdo.discord.cogs import BaseCog
+from watdo.discord.embeds import ErrorEmbed
 
 
 class Bot(dc.Bot):
@@ -33,6 +35,7 @@ class Bot(dc.Bot):
                 await event(*args, **kwargs)
             except Exception as error:
                 get_logger(f"Bot.{event_name}").exception(error)
+                raise error
 
         self.add_listener(event_wrapper, event_name)
 
@@ -60,26 +63,30 @@ class Bot(dc.Bot):
         await super().start(token, reconnect=reconnect)
 
     async def on_message(self, message: discord.Message) -> None:
-        bot_user = cast(discord.User, self.user)
+        try:
+            bot_user = cast(discord.User, self.user)
 
-        if message.channel.id == 1028932255256682536:
-            if not IS_DEV:
+            if message.channel.id == 1028932255256682536:
+                if not IS_DEV:
+                    return
+            else:
+                if IS_DEV:
+                    return
+
+            if message.author.id == bot_user.id:
                 return
-        else:
-            if IS_DEV:
-                return
 
-        if message.author.id == bot_user.id:
-            return
+            if not message.content.startswith(str(self.command_prefix)):
+                self.loop.create_task(self.process_shortcut_commands(message))
 
-        if not message.content.startswith(str(self.command_prefix)):
-            self.loop.create_task(self.process_shortcut_commands(message))
+                if bot_user.mention in message.content.replace("<@!", "<@"):
+                    await message.reply(f"Type `{self.command_prefix}help` for help.")
 
-            if bot_user.mention in message.content.replace("<@!", "<@"):
-                await message.reply(f"Type `{self.command_prefix}help` for help.")
-
-        else:
-            await self.process_commands(message)
+            else:
+                await self.process_commands(message)
+        except Exception as error:
+            get_logger("Bot.on_message").exception(error)
+            raise error
 
     async def process_shortcut_commands(self, message: discord.Message) -> None:
         command = await self.db.get_command_shortcut(
@@ -103,3 +110,7 @@ class Bot(dc.Bot):
             await ctx.send(f"{ctx.prefix}{ctx.invoked_with} {params}")
         else:
             await ctx.send(f"**{type(error).__name__}:** {error}")
+
+    def log(self, record: logging.LogRecord) -> None:
+        channel = self.get_channel(1086519345972260894)
+        self.loop.create_task(channel.send(embed=ErrorEmbed(record)))
