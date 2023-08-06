@@ -3,6 +3,7 @@ import json
 from abc import ABC
 from typing import cast, Dict, Any, Optional
 from dateutil import rrule
+import recurrent
 from watdo import dt
 from watdo.safe_data import (
     SafeData,
@@ -93,6 +94,13 @@ class Task(Model):
         super().__init__(utc_offset_hour=utc_offset_hour, created_at=created_at)
 
     @property
+    def rrulestr(self) -> str:
+        return recurrent.format(
+            str(self._rrule),
+            now=dt.date_now(self.utc_offset_hour.value),
+        )
+
+    @property
     def rrule(self) -> rrule.rrule:
         if isinstance(self._rrule, rrule.rrule):
             return self._rrule
@@ -137,6 +145,16 @@ class Task(Model):
             return self.last_done is not None
 
         return cast(dt.datetime, self.due_date).timestamp() == self.next_reminder.value
+
+    @property
+    def is_overdue(self) -> bool:
+        due_date = self.due_date
+
+        if due_date is not None:
+            if due_date < dt.date_now(self.utc_offset_hour.value):
+                return True
+
+        return False
 
 
 class User(Model):

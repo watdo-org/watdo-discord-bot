@@ -39,11 +39,8 @@ class Tasks(BaseCog):
             if task.is_important.value:
                 is_important += 1
 
-            task_due_date = task.due_date
-
-            if task_due_date is not None:
-                if task_due_date < dt.date_now(user.utc_offset_hour.value):
-                    overdue += 1
+            if task.is_overdue:
+                overdue += 1
 
             if isinstance(task.due, String):
                 recurring += 1

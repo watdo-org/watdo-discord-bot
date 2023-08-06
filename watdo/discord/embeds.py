@@ -23,7 +23,10 @@ if TYPE_CHECKING:
 
 class Embed(discord.Embed):
     def __init__(self, bot: "Bot", title: str, **kwargs: Any) -> None:
-        super().__init__(title=title, color=bot.color, **kwargs)
+        if kwargs.get("color") is None:
+            kwargs["color"] = bot.color
+
+        super().__init__(title=title, **kwargs)
 
 
 class ErrorEmbed(discord.Embed):
@@ -43,7 +46,20 @@ class ErrorEmbed(discord.Embed):
 
 class TaskEmbed(Embed):
     def __init__(self, bot: "Bot", task: Task, *, utc_offset_hour: float) -> None:
-        super().__init__(bot, task.title.value)
+        if task.is_done:
+            color = discord.Colour.from_rgb(65, 161, 69)
+            icon_url = (
+                "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3b/"
+                "Eo_circle_green_checkmark.svg/800px-Eo_circle_green_checkmark.svg.png"
+            )
+        elif task.is_overdue:
+            color = discord.Colour.from_rgb(255, 192, 72)
+            icon_url = "https://cdn-icons-png.flaticon.com/512/6897/6897039.png"
+        else:
+            color = None
+            icon_url = None
+
+        super().__init__(bot, task.title.value, color=color)
         author = "📝"
 
         if task.is_recurring:
@@ -54,10 +70,7 @@ class TaskEmbed(Embed):
         self.set_author(
             name=f"{'📌 ' if task.is_important.value else ''}"
             f"{author} {task.category.value}",
-            icon_url="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3b/"
-            "Eo_circle_green_checkmark.svg/800px-Eo_circle_green_checkmark.svg.png"
-            if task.is_done
-            else None,
+            icon_url=icon_url,
         )
 
         if task.description is not None:
@@ -74,6 +87,9 @@ class TaskEmbed(Embed):
                 value=f"{humanize.naturaldate(task.due_date.astimezone()).capitalize()}\n"
                 f"{task.due_date.strftime('%I:%M %p')}",
             )
+
+        if task.is_recurring:
+            self.set_footer(text=task.rrulestr)
 
         self.add_field(
             name="Created",
@@ -100,11 +116,11 @@ class PagedEmbed:
     ) -> None:
         if controls is None:
             controls = {
+                "extract": "✴",
                 "first": "\u23ee",
                 "previous": "\u25c0",
                 "next": "\u25b6",
                 "last": "\u23ed",
-                "extract": "✴",
             }
 
         self.bot = bot
