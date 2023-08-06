@@ -63,9 +63,7 @@ class TaskEmbed(Embed):
         if task.description is not None:
             self.add_field(
                 name="Description",
-                value=bytes(task.description.value, "utf-8")
-                .decode("unicode_escape")
-                .replace(" ", " \u200c"),
+                value=bytes(task.description.value, "utf-8").decode("unicode_escape"),
             )
 
         if task.due_date is not None:
