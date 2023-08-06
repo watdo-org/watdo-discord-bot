@@ -32,7 +32,7 @@ class Reminder:
                 channel = user
 
         content = f"⏰ **Reminder** for {user.mention}"
-        embed = TaskEmbed(self.bot, task, utc_offset_hour=task.utc_offset_hour.value)
+        embed = TaskEmbed(self.bot, task)
 
         try:
             await channel.send(content, embed=embed)

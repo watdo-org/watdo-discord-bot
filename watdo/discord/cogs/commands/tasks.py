@@ -172,10 +172,7 @@ class Tasks(BaseCog):
                 utc_offset_hour=utc_offset_hour,
             )
 
-        await ctx.send(
-            content,
-            embed=TaskEmbed(self.bot, task, utc_offset_hour=utc_offset_hour),
-        )
+        await ctx.send(content, embed=TaskEmbed(self.bot, task))
 
     @dc.command(aliases=["do"])
     async def do_priority(
@@ -221,16 +218,7 @@ class Tasks(BaseCog):
             return
 
         paged_embed = PagedEmbed(self.bot)
-        paged_embed.add_pages(
-            *(
-                TaskEmbed(
-                    self.bot,
-                    t,
-                    utc_offset_hour=utc_offset_hour,
-                )
-                for t in tasks
-            )
-        )
+        paged_embed.add_pages(*(TaskEmbed(self.bot, t) for t in tasks))
         paged_embed.send(ctx)
 
     async def _confirm_task_action(
@@ -250,11 +238,7 @@ class Tasks(BaseCog):
 
         message = await ctx.send(
             "Are you sure?",
-            embed=TaskEmbed(
-                self.bot,
-                task,
-                utc_offset_hour=utc_offset_hour,
-            ),
+            embed=TaskEmbed(self.bot, task),
         )
         is_confirm = await self.wait_for_confirmation(ctx, message)
 
@@ -283,7 +267,10 @@ class Tasks(BaseCog):
             if not task.is_recurring:
                 await self.db.remove_user_task(uid, task)
 
-            await message.edit(content="Done ✅")
+            await message.edit(
+                content="Done ✅",
+                embed=TaskEmbed(self.bot, task),
+            )
 
     @dc.command()
     async def cancel(self, ctx: dc.Context[Bot], title: str) -> None:
@@ -292,7 +279,10 @@ class Tasks(BaseCog):
 
         if (message is not None) and (task is not None):
             await self.db.remove_user_task(str(ctx.author.id), task)
-            await message.edit(content="Cancelled ✅")
+            await message.edit(
+                content="Cancelled ✅",
+                embed=TaskEmbed(self.bot, task),
+            )
 
 
 async def setup(bot: Bot) -> None:

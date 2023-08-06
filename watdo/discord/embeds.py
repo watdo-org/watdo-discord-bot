@@ -45,7 +45,7 @@ class ErrorEmbed(discord.Embed):
 
 
 class TaskEmbed(Embed):
-    def __init__(self, bot: "Bot", task: Task, *, utc_offset_hour: float) -> None:
+    def __init__(self, bot: "Bot", task: Task) -> None:
         if task.is_done:
             color = discord.Colour.from_rgb(65, 161, 69)
             icon_url = (
