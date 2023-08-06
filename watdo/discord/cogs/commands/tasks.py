@@ -150,6 +150,9 @@ class Tasks(BaseCog):
             due=self._parse_due(due, utc_offset_hour) if due else None,
             description=description,
             has_reminder=has_reminder,
+            channel_id=None
+            if isinstance(ctx.channel, discord.channel.DMChannel)
+            else ctx.channel.id,
             created_at=time.time()
             if existing_task is None
             else existing_task.created_at.value,

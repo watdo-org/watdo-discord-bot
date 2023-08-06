@@ -53,6 +53,19 @@ class Number(SafeData[float]):
         return True
 
 
+class SnowflakeID(SafeData[int]):
+    def __init__(self, value: int) -> None:
+        self.min_val = 10000000000000000
+        self.max_val = 99999999999999999999
+        super().__init__(int, value)
+
+    def _is_valid(self) -> bool:
+        if self.value > self.max_val or self.value < self.min_val:
+            return False
+
+        return True
+
+
 class UTCOffsetHour(Number):
     def __init__(self, value: float) -> None:
         super().__init__(value, min_val=-24, max_val=24)

@@ -1,6 +1,8 @@
 import asyncio
 from typing import TYPE_CHECKING
+import discord
 from watdo import dt
+from watdo.models import Task
 from watdo.database import Database
 from watdo.safe_data import Timestamp
 from watdo.discord.embeds import TaskEmbed
@@ -19,6 +21,26 @@ class Reminder:
         self.loop = loop
         self.db = database
         self.bot = bot
+
+    async def remind(self, user: discord.User, task: Task) -> None:
+        if task.channel_id is None:
+            channel = user
+        else:
+            channel = self.bot.get_channel(task.channel_id.value)
+
+            if channel is None:
+                channel = user
+
+        content = "Please do this task!!"
+        embed = TaskEmbed(self.bot, task, utc_offset_hour=task.utc_offset_hour.value)
+
+        try:
+            await channel.send(content, embed=embed)
+        except discord.HTTPException:
+            try:
+                await user.send(content, embed=embed)
+            except discord.HTTPException:
+                pass
 
     async def _run(self) -> None:
         while True:
@@ -47,14 +69,7 @@ class Reminder:
                             continue
 
                         if not task.is_done and task.has_reminder.value:
-                            self.bot.loop.create_task(
-                                user.send(
-                                    "Please do this task!!",
-                                    embed=TaskEmbed(
-                                        self.bot, task, utc_offset_hour=utc_offset_hour
-                                    ),
-                                )
-                            )
+                            self.bot.loop.create_task(self.remind(user, task))
 
                         old_task_str = task.as_json_str()
 

@@ -4,7 +4,14 @@ from abc import ABC
 from typing import cast, Dict, Any, Optional
 from dateutil import rrule
 from watdo import dt
-from watdo.safe_data import SafeData, String, Boolean, Timestamp, UTCOffsetHour
+from watdo.safe_data import (
+    SafeData,
+    String,
+    Boolean,
+    Timestamp,
+    UTCOffsetHour,
+    SnowflakeID,
+)
 
 
 class Model(ABC):
@@ -58,6 +65,7 @@ class Task(Model):
         has_reminder: bool = True,
         last_done: Optional[float] = None,
         next_reminder: Optional[float] = None,
+        channel_id: Optional[int] = None,
         created_at: float,
     ) -> None:
         self.title = String(title, min_len=1, max_len=200)
@@ -70,6 +78,7 @@ class Task(Model):
         self.has_reminder = Boolean(has_reminder)
         self.last_done = Timestamp(last_done) if last_done else None
         self.next_reminder = Timestamp(next_reminder) if next_reminder else None
+        self.channel_id = SnowflakeID(channel_id) if channel_id else None
 
         if due is None:
             self.due = None
