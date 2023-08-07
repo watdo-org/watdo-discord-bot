@@ -148,10 +148,10 @@ class PagedEmbed:
         for index, page in enumerate(self.pages):
             page_no = f"{index + 1}/{len(self.pages)}"
 
-            if page.footer is None:
+            if page.footer.text is None:
                 page.set_footer(text=page_no)
             else:
-                page.set_footer(text=f"{page_no} • {page.footer}")
+                page.set_footer(text=f"{page_no} • {page.footer.text}")
 
     def send(self, ctx: dc.Context["Bot"]) -> None:
         self.bot.loop.create_task(self._send(ctx))
@@ -227,22 +227,3 @@ class PagedEmbed:
     def add_page(self, page: Embed) -> None:
         """Add page."""
         self.pages.append(page)
-
-    def set_thumbnail(self, **kwargs: Any) -> None:
-        """Set thumbnail of all pages."""
-        for page in self:
-            page.set_thumbnail(**kwargs)
-
-    def set_footer(self, **kwargs: Any) -> None:
-        """Set footer of all pages."""
-        for page in self:
-            page.set_footer(**kwargs)
-
-    def set_image(self, **kwargs: Any) -> None:
-        """Set an image for all pages."""
-        for page in self:
-            page.set_image(**kwargs)
-
-    async def set_current_page(self, page: Embed) -> None:
-        self.pages[self.current] = page
-        await self._message.edit(embed=self.pages[self.current])

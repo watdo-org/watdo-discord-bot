@@ -194,6 +194,7 @@ class Tasks(BaseCog):
         )
         tasks.sort(key=lambda t: t.is_important.value, reverse=True)
         tasks.sort(key=lambda t: t.due_date.timestamp() if t.due_date else math.inf)
+        tasks.sort(key=lambda t: t.last_done.value if t.last_done else math.inf)
 
         if not tasks:
             await ctx.send("No tasks.")
