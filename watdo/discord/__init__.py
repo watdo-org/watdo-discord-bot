@@ -49,7 +49,7 @@ class Bot(dc.Bot):
                 continue
 
             if path.endswith(".py"):
-                path = path.rstrip(".py").replace("/", ".")
+                path = path.rstrip(".py").replace("/", ".").replace("\\", ".")
                 await self.load_extension(path)
 
         # Ensure docstring for all commands
