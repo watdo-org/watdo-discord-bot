@@ -64,6 +64,7 @@ class Task(Model):
         due: Optional[float | str],
         description: Optional[str] = None,
         has_reminder: bool = True,
+        is_auto_done: bool = False,
         last_done: Optional[float] = None,
         next_reminder: Optional[float] = None,
         channel_id: Optional[int] = None,
@@ -77,6 +78,7 @@ class Task(Model):
             String(description, min_len=0, max_len=1000) if description else None
         )
         self.has_reminder = Boolean(has_reminder)
+        self.is_auto_done = Boolean(is_auto_done)
         self.last_done = Timestamp(last_done) if last_done else None
         self.next_reminder = Timestamp(next_reminder) if next_reminder else None
         self.channel_id = SnowflakeID(channel_id) if channel_id else None

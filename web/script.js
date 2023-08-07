@@ -9,6 +9,7 @@ class Command {
             "Due": document.querySelector("input[placeholder='Due']"),
             "Description": document.querySelector("textarea[placeholder='Description']"),
             "Remind": document.querySelector("input[name='Remind']"),
+            "Auto Done on Remind": document.querySelector("input[name='Auto Done on Remind']"),
         };
         this.updateValue();
 

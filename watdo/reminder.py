@@ -23,24 +23,45 @@ class Reminder:
         self.bot = bot
 
     async def remind(self, user: discord.User, task: Task) -> None:
-        if task.channel_id is None:
-            channel = user
-        else:
-            channel = self.bot.get_channel(task.channel_id.value)
-
-            if channel is None:
+        if not task.is_done and task.has_reminder.value:
+            if task.channel_id is None:
                 channel = user
+            else:
+                channel = self.bot.get_channel(task.channel_id.value)
 
-        content = f"⏰ **Reminder** for {user.mention}"
-        embed = TaskEmbed(self.bot, task)
+                if channel is None:
+                    channel = user
 
-        try:
-            await channel.send(content, embed=embed)
-        except discord.HTTPException:
+            content = f"⏰ **Reminder** for {user.mention}"
+            embed = TaskEmbed(self.bot, task)
+
             try:
-                await user.send(content, embed=embed)
+                await channel.send(content, embed=embed)
             except discord.HTTPException:
-                pass
+                try:
+                    await user.send(content, embed=embed)
+                except discord.HTTPException:
+                    pass
+
+    async def _update_task(self, uid: str, task: Task) -> None:
+        old_task_str = task.as_json_str()
+        utc_offset_hour = task.utc_offset_hour.value
+
+        if task.is_recurring:
+            ts = task.rrule.after(dt.date_now(utc_offset_hour)).timestamp()
+            task.next_reminder = Timestamp(ts)
+        else:
+            task.next_reminder = None
+
+        await self.db.set_user_task(
+            uid,
+            old_task_str=old_task_str,
+            new_task=task,
+            utc_offset_hour=utc_offset_hour,
+        )
+
+        if task.is_auto_done.value:
+            await self.db.done_user_task(uid, task)
 
     async def _run(self) -> None:
         while True:
@@ -68,27 +89,8 @@ class Reminder:
                         if user is None:
                             continue
 
-                        if not task.is_done and task.has_reminder.value:
-                            self.bot.loop.create_task(self.remind(user, task))
-
-                        old_task_str = task.as_json_str()
-
-                        if task.is_recurring:
-                            ts = task.rrule.after(
-                                dt.date_now(utc_offset_hour)
-                            ).timestamp()
-                            task.next_reminder = Timestamp(ts)
-                        else:
-                            task.next_reminder = None
-
-                        self.bot.loop.create_task(
-                            self.db.set_user_task(
-                                uid,
-                                old_task_str=old_task_str,
-                                new_task=task,
-                                utc_offset_hour=utc_offset_hour,
-                            )
-                        )
+                        self.bot.loop.create_task(self.remind(user, task))
+                        self.bot.loop.create_task(self._update_task(uid, task))
 
             await asyncio.sleep(1)
 

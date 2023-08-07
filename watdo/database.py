@@ -1,7 +1,9 @@
 import json
+import time
 from typing import Any, List, Optional, Dict, AsyncIterator
 from redis.asyncio import Redis
 from watdo.models import Task, User
+from watdo.safe_data import Timestamp
 from watdo.environ import REDISHOST, REDISPORT, REDISUSER, REDISPASSWORD
 
 
@@ -90,6 +92,20 @@ class Database:
             if task.as_json_str() == old_task_str:
                 await self._cache.lset(f"tasks.{uid}", index, new_task.as_json_str())
                 break
+
+    async def done_user_task(self, uid: str, task: Task) -> None:
+        old_task_str = task.as_json_str()
+        task.last_done = Timestamp(time.time())
+
+        await self.set_user_task(
+            uid,
+            old_task_str=old_task_str,
+            new_task=task,
+            utc_offset_hour=task.utc_offset_hour.value,
+        )
+
+        if not task.is_recurring:
+            await self.remove_user_task(uid, task)
 
     async def remove_user_task(self, uid: str, task: Task) -> None:
         data = task.as_json_str()

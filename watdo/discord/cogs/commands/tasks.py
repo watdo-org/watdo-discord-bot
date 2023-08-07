@@ -129,9 +129,10 @@ class Tasks(BaseCog):
         ),
         description: Optional[str] = None,
         has_reminder: bool = True,
+        is_auto_done: bool = False,
     ) -> None:
         """Add a task to do.
-        Use this please: https://nietsuu.github.io/watdo
+        **Use this please: https://nietsuu.github.io/watdo**
         If the title is a duplicate, the old task will be overwritten."""
         uid = str(ctx.author.id)
         user = await self.get_user_data(ctx)
@@ -147,6 +148,7 @@ class Tasks(BaseCog):
             due=self._parse_due(due, utc_offset_hour) if due else None,
             description=description,
             has_reminder=has_reminder,
+            is_auto_done=is_auto_done,
             channel_id=None
             if isinstance(ctx.channel, discord.channel.DMChannel)
             else ctx.channel.id,
@@ -254,19 +256,7 @@ class Tasks(BaseCog):
         message, task = await self._confirm_task_action(ctx, title)
 
         if (message is not None) and (task is not None):
-            user = await self.get_user_data(ctx)
-            old_task_str = task.as_json_str()
-            task.last_done = Timestamp(time.time())
-            await self.db.set_user_task(
-                uid,
-                old_task_str=old_task_str,
-                new_task=task,
-                utc_offset_hour=user.utc_offset_hour.value,
-            )
-
-            if not task.is_recurring:
-                await self.db.remove_user_task(uid, task)
-
+            await self.db.done_user_task(uid, task)
             await message.edit(
                 content="Done ✅",
                 embed=TaskEmbed(self.bot, task),
