@@ -146,7 +146,12 @@ class PagedEmbed:
 
     def _set_page_numbers(self) -> None:
         for index, page in enumerate(self.pages):
-            page.set_footer(text=f"{index + 1}/{len(self.pages)}")
+            page_no = f"{index + 1}/{len(self.pages)}"
+
+            if page.footer is None:
+                page.set_footer(text=page_no)
+            else:
+                page.set_footer(text=f"{page_no} • {page.footer}")
 
     def send(self, ctx: dc.Context["Bot"]) -> None:
         self.bot.loop.create_task(self._send(ctx))
