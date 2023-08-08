@@ -59,7 +59,16 @@ class TaskEmbed(Embed):
             color = None
             icon_url = None
 
-        super().__init__(bot, task.title.value, color=color)
+        super().__init__(
+            bot,
+            task.title.value,
+            color=color,
+            description=bytes(task.description.value, "utf-8")
+            .decode("unicode_escape")
+            .rstrip()
+            if task.description
+            else None,
+        )
         author = "📝"
 
         if task.is_recurring:
@@ -72,14 +81,6 @@ class TaskEmbed(Embed):
             f"{author} {task.category.value}",
             icon_url=icon_url,
         )
-
-        if task.description is not None:
-            self.add_field(
-                name="Description",
-                value=bytes(task.description.value, "utf-8")
-                .decode("unicode_escape")
-                .rstrip(),
-            )
 
         if task.due_date is not None:
             self.add_field(
