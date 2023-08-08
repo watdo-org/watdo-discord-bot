@@ -108,6 +108,8 @@ class Bot(dc.Bot):
         if isinstance(error, dc.MissingRequiredArgument) and ctx.command is not None:
             params = BaseCog.parse_params(ctx.command)
             await ctx.send(f"{ctx.prefix}{ctx.invoked_with} {params}")
+        elif isinstance(error, dc.CommandNotFound):
+            await ctx.send(f'No command "{ctx.invoked_with}" ❌')
         else:
             await ctx.send(f"**{type(error).__name__}:** {error}")
 

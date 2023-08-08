@@ -176,7 +176,11 @@ class DatabaseCache:
 
     async def lrem(self, key: str, value: str) -> None:
         await self.db._connection.lrem(key, 1, value)
-        self._list_cache[key].remove(value)
+
+        try:
+            self._list_cache[key].remove(value)
+        except ValueError:
+            await self.lrange(key)
 
     async def lset(self, key: str, index: int, value: str) -> None:
         await self.db._connection.lset(key, index, value)
