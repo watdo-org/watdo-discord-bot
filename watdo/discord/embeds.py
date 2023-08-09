@@ -1,3 +1,4 @@
+import codecs
 import asyncio
 import logging
 from typing import (
@@ -58,16 +59,14 @@ class TaskEmbed(Embed):
             color = None
             icon_url = None
 
-        super().__init__(
-            bot,
-            task.title.value,
-            color=color,
-            description=bytes(task.description.value, "utf-8")
-            .decode("unicode_escape")
-            .rstrip()
-            if task.description
-            else None,
-        )
+        if task.description is None:
+            description = None
+        else:
+            desc_bytes = bytes(task.description.value, "utf-8")
+            desc_escaped = codecs.escape_decode(desc_bytes)[0]
+            description = cast(bytes, desc_escaped).decode("utf-8").rstrip()
+
+        super().__init__(bot, task.title.value, color=color, description=description)
         author = "📝"
 
         if task.is_recurring:
