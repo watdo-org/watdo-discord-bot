@@ -15,7 +15,6 @@ redis = "*"
 "discord.py" = "*"
 dateparser = "*"
 recurrent = "*"
-humanize = "*"
 charset-normalizer = "*"
 
 [dev-packages]

@@ -11,7 +11,6 @@ from typing import (
     Callable,
     Iterator,
 )
-import humanize
 import discord
 from discord.ext import commands as dc
 from watdo import dt
@@ -82,11 +81,12 @@ class TaskEmbed(Embed):
             icon_url=icon_url,
         )
 
+        date_format = "%b %d, %Y\n%I:%M %p"
+
         if task.due_date is not None:
             self.add_field(
                 name="Due Date",
-                value=f"{humanize.naturaldate(task.due_date.astimezone()).capitalize()}\n"
-                f"{task.due_date.strftime('%I:%M %p')}",
+                value=f"{task.due_date.strftime(date_format)}",
             )
 
         if task.is_recurring:
@@ -94,16 +94,14 @@ class TaskEmbed(Embed):
 
         self.add_field(
             name="Created",
-            value=f"{humanize.naturaldate(task.date_created.astimezone()).capitalize()}\n"
-            f"{task.date_created.strftime('%I:%M %p')}",
+            value=f"{task.date_created.strftime(date_format)}",
         )
 
         if task.last_done is not None:
             last_done_date = cast(dt.datetime, task.last_done_date)
             self.add_field(
                 name="Last Done",
-                value=f"{humanize.naturaldate(last_done_date.astimezone()).capitalize()}\n"
-                f"{last_done_date.strftime('%I:%M %p')}",
+                value=f"{last_done_date.strftime(date_format)}",
             )
 
 
