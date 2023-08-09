@@ -92,6 +92,8 @@ class Database:
             if task.as_json_str() == old_task_str:
                 await self._cache.lset(f"tasks.{uid}", index, new_task.as_json_str())
                 break
+        else:
+            raise ValueError("Task not found.")
 
     async def done_user_task(self, uid: str, task: Task) -> None:
         old_task_str = task.as_json_str()
@@ -113,7 +115,7 @@ class Database:
         try:
             await self._cache.lrem(f"tasks.{uid}", data)
         finally:
-            await self._cache.lpush(f"archived_tasks.{uid}", data)
+            await self._connection.lpush(f"archived_tasks.{uid}", data)
 
     async def get_user_data(self, uid: str) -> Optional[User]:
         data = await self._cache.get(f"user.{uid}")
