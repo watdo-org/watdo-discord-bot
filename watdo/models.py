@@ -75,7 +75,7 @@ class Task(Model):
         self.is_important = Boolean(is_important)
         self.due: Optional[Timestamp | String]
         self.description = (
-            String(description, min_len=0, max_len=1000) if description else None
+            String(description, min_len=0, max_len=4000) if description else None
         )
         self.has_reminder = Boolean(has_reminder)
         self.is_auto_done = Boolean(is_auto_done)

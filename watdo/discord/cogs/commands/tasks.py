@@ -204,16 +204,22 @@ class Tasks(BaseCog):
             res = []
 
             for i, t in enumerate(tasks):
-                author = "📝"
+                task_type = "📝"
+                status = ""
 
                 if t.is_recurring:
-                    author = "🔁" if t.has_reminder.value else "🔕 🔁"
+                    task_type = "🔁" if t.has_reminder.value else "🔁 🔕"
                 elif t.due_date:
-                    author = "🔔" if t.has_reminder.value else "🔕"
+                    task_type = "🔔" if t.has_reminder.value else "🔕"
+
+                if t.is_done:
+                    status = "✅ "
+                elif t.is_overdue:
+                    status = "⚠️ "
 
                 p = (
-                    f"{'📌 ' if t.is_important.value else ''}"
-                    f"{author} [{t.category.value}]"
+                    f"{status}{'📌 ' if t.is_important.value else ''}"
+                    f"{task_type} [{t.category.value}]"
                 )
                 res.append(f"{i + 1}. {p} {t.title.value}")
 
