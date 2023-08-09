@@ -5,6 +5,7 @@ import asyncio
 from typing import cast, Any
 import discord
 from discord.ext import commands as dc
+from watdo import dt
 from watdo.environ import IS_DEV
 from watdo.database import Database
 from watdo.logging import get_logger
@@ -100,7 +101,7 @@ class Bot(dc.Bot):
 
     async def _on_ready_event(self) -> None:
         Reminder(self.loop, self.db, self).start()
-        get_logger("Bot.on_ready").info("Bot is ready.")
+        get_logger("Bot.on_ready").info(f"Timezone: {dt.local_tz()}")
 
     async def _on_command_error_event(
         self, ctx: dc.Context["Bot"], error: dc.CommandError

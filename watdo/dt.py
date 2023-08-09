@@ -1,3 +1,4 @@
+import time
 import datetime as dt
 from typing import NewType
 
@@ -18,3 +19,9 @@ def fromtimestamp(timestamp: float, utc_offset_hour: float) -> datetime:
 
 def utc_offset_hour_to_tz(utc_offset_hour: float) -> timezone:
     return timezone(dt.timezone(dt.timedelta(hours=utc_offset_hour)))
+
+
+def local_tz() -> timezone:
+    offset = float(time.timezone) if (time.localtime().tm_isdst == 0) else time.altzone
+    offset = offset / 60 / 60 * -1
+    return utc_offset_hour_to_tz(offset)
