@@ -96,6 +96,10 @@ class Task(Model):
         super().__init__(utc_offset_hour=utc_offset_hour, created_at=created_at)
 
     @property
+    def tz(self) -> dt.timezone:
+        return dt.utc_offset_hour_to_tz(self.utc_offset_hour.value)
+
+    @property
     def rrulestr(self) -> str:
         return recurrent.format(
             str(self._rrule),

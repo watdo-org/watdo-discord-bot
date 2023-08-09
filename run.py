@@ -7,7 +7,7 @@ if __name__ == "__main__":
     if IS_DEV and os.name != "nt":
         import time
 
-        os.environ["TZ"] = "Europe/London"
+        os.environ["TZ"] = "Canada/Pacific"
         time.tzset()
 
     try:
