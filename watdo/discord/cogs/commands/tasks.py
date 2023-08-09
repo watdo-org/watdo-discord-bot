@@ -271,7 +271,7 @@ class Tasks(BaseCog):
 
     @dc.command()
     async def cancel(self, ctx: dc.Context[Bot], title: str) -> None:
-        """Cancel a task."""
+        """Remove a task."""
         message, task = await self._confirm_task_action(ctx, title)
 
         if (message is not None) and (task is not None):
@@ -313,6 +313,31 @@ class Tasks(BaseCog):
             )
 
         await ctx.send(f'Category "{old_name}" has been renamed to "{new_name}" ✅')
+
+    async def _delete_category_task(
+        self, ctx: dc.Context[Bot], uid: str, task: Task
+    ) -> None:
+        await self.db.remove_user_task(uid, task)
+        await ctx.send(f'Task "{task.title.value}" has been removed ✅')
+
+    @dc.command(aliases=["dc"])
+    async def delete_category(self, ctx: dc.Context[Bot], name: str) -> None:
+        """Delete a category."""
+        uid = str(ctx.author.id)
+        user = await self.get_user_data(ctx)
+        utc_offset_hour = user.utc_offset_hour.value
+        tasks = await self.db.get_user_tasks(
+            uid,
+            utc_offset_hour=utc_offset_hour,
+            category=name,
+        )
+
+        if len(tasks) == 0:
+            await ctx.send(f'Category "{name}" not found ❌')
+            return
+
+        for task in tasks:
+            self.bot.loop.create_task(self._delete_category_task(ctx, uid, task))
 
 
 async def setup(bot: Bot) -> None:
