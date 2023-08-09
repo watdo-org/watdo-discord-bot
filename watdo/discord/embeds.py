@@ -109,7 +109,7 @@ class PagedEmbed:
         self,
         bot: "Bot",
         *,
-        timeout: float = 300,
+        timeout: float = 60 * 60,  # 1 hour
         controls: Optional[Dict[str, str]] = None,
     ) -> None:
         if controls is None:
@@ -129,10 +129,6 @@ class PagedEmbed:
 
         self._message: discord.Message
         self._custom_buttons: Dict[str, Callable[[Embed], Awaitable[None]]] = {}
-
-    def __getitem__(self, index: int) -> Embed:
-        """Enable indexing to this object."""
-        return self.pages[index]
 
     def __iter__(self) -> Iterator[Embed]:
         """Make this object iterable."""
@@ -158,7 +154,8 @@ class PagedEmbed:
         """Start and send the embeds paginating lorem."""
         self._set_page_numbers()
 
-        message = await ctx.send(embed=self[0])
+        embeds_len = 1
+        message = await ctx.send(embeds=self.pages[0:embeds_len])
         self._message = message
 
         # add the control reactions
@@ -205,12 +202,18 @@ class PagedEmbed:
                 # go to the last page
                 self.current = len(self) - 1
             elif reaction == self.controls["extract"]:
-                ctx.bot.loop.create_task(message.edit(embeds=self.pages[:10]))
-                break
+                embeds_len = 10 if embeds_len == 1 else 1
             elif reaction in self._custom_buttons:
                 await self._custom_buttons[reaction](self.pages[self.current])
 
-            ctx.bot.loop.create_task(message.edit(embed=self.pages[self.current]))
+            ctx.bot.loop.create_task(
+                message.edit(
+                    embeds=self.pages[
+                        self.current * embeds_len : self.current * embeds_len
+                        + embeds_len
+                    ],
+                )
+            )
 
     def add_button(
         self, reaction: str, function: Callable[[Embed], Awaitable[None]]
