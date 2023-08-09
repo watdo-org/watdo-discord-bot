@@ -7,7 +7,11 @@ T = TypeVar("T")
 class SafeData(ABC, Generic[T]):
     def __init__(self, type_: type, value: T) -> None:
         self.type = type_
-        self.value = type_(value)
+        self.value: T
+        self.set(value)
+
+    def set(self, value: T) -> None:
+        self.value = self.type(value)
 
         if not self._is_valid():
             raise ValueError(f"{self.__class__.__name__}: {self.value}")

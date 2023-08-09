@@ -281,6 +281,39 @@ class Tasks(BaseCog):
                 embed=TaskEmbed(self.bot, task),
             )
 
+    @dc.command(aliases=["rc"])
+    async def rename_category(
+        self, ctx: dc.Context[Bot], old_name: str, new_name: str
+    ) -> None:
+        """Rename a category."""
+        new_name = new_name.strip()
+        uid = str(ctx.author.id)
+        user = await self.get_user_data(ctx)
+        utc_offset_hour = user.utc_offset_hour.value
+        tasks = await self.db.get_user_tasks(
+            uid,
+            utc_offset_hour=utc_offset_hour,
+            category=old_name,
+        )
+
+        if len(tasks) == 0:
+            await ctx.send(f'Category "{old_name}" not found ❌')
+            return
+
+        for task in tasks:
+            old_task_str = task.as_json_str()
+            task.category.set(new_name)
+            self.bot.loop.create_task(
+                self.db.set_user_task(
+                    uid,
+                    old_task_str=old_task_str,
+                    new_task=task,
+                    utc_offset_hour=utc_offset_hour,
+                )
+            )
+
+        await ctx.send(f'Category "{old_name}" has been renamed to "{new_name}" ✅')
+
 
 async def setup(bot: Bot) -> None:
     await bot.add_cog(Tasks(bot, bot.db))
