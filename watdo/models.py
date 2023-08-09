@@ -70,8 +70,8 @@ class Task(Model):
         channel_id: Optional[int] = None,
         created_at: float,
     ) -> None:
-        self.title = String(title, min_len=1, max_len=200)
-        self.category = String(category, min_len=0, max_len=50)
+        self.title = String(title.strip(), min_len=1, max_len=200)
+        self.category = String(category.strip(), min_len=0, max_len=50)
         self.is_important = Boolean(is_important)
         self.due: Optional[Timestamp | String]
         self.description = (
@@ -91,7 +91,9 @@ class Task(Model):
             self.due = String(due, min_len=7, max_len=math.inf)
             tz = dt.utc_offset_hour_to_tz(utc_offset_hour)
             dtstart = rrule.rrulestr(due)._dtstart.replace(tzinfo=tz)  # type: ignore[union-attr]
-            self._rrule = rrule.rrulestr(due.split("\n")[1], dtstart=dtstart)
+            self._rrule: rrule.rrule = cast(
+                rrule.rrule, rrule.rrulestr(due.split("\n")[1], dtstart=dtstart)
+            )
 
         super().__init__(utc_offset_hour=utc_offset_hour, created_at=created_at)
 
@@ -123,7 +125,7 @@ class Task(Model):
         if isinstance(due, float):
             return dt.fromtimestamp(due, self.utc_offset_hour.value)
 
-        return self._rrule.after(self.last_done_date or self.date_created)
+        return self._rrule.after(self.last_done_date or self._rrule._dtstart)  # type: ignore[attr-defined]
 
     @property
     def last_done_date(self) -> Optional[dt.datetime]:
