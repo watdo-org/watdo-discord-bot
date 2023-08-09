@@ -258,7 +258,7 @@ class Tasks(BaseCog):
 
     @dc.command()
     async def done(self, ctx: dc.Context[Bot], title: str) -> None:
-        """Remove a task."""
+        """Mark a task as done. If the task is not a recurring task, it will get removed."""
         uid = str(ctx.author.id)
         message, task = await self._confirm_task_action(ctx, title)
 

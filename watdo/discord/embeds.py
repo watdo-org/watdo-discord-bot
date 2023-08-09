@@ -1,3 +1,4 @@
+import math
 import codecs
 import asyncio
 import logging
@@ -200,20 +201,19 @@ class PagedEmbed:
                     self.current += 1
             elif reaction == self.controls["last"]:
                 # go to the last page
-                self.current = len(self) - 1
+                current = (len(self) - 1) % (len(self) / embeds_len)
+                self.current = math.ceil(current)
             elif reaction == self.controls["extract"]:
                 embeds_len = 10 if embeds_len == 1 else 1
             elif reaction in self._custom_buttons:
                 await self._custom_buttons[reaction](self.pages[self.current])
 
-            ctx.bot.loop.create_task(
-                message.edit(
-                    embeds=self.pages[
-                        self.current * embeds_len : self.current * embeds_len
-                        + embeds_len
-                    ],
-                )
-            )
+            embeds = self.pages[
+                self.current * embeds_len : self.current * embeds_len + embeds_len
+            ]
+
+            if embeds:
+                ctx.bot.loop.create_task(message.edit(embeds=embeds))
 
     def add_button(
         self, reaction: str, function: Callable[[Embed], Awaitable[None]]
