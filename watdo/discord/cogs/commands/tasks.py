@@ -1,6 +1,6 @@
 import math
 import time
-from typing import Optional, Tuple, Dict
+from typing import Optional, Tuple, Dict, List
 import recurrent
 import dateparser
 import discord
@@ -74,6 +74,65 @@ class Tasks(BaseCog):
             )
 
         await ctx.send(embed=embed)
+
+    async def _send_tasks(
+        self, ctx: dc.Context[Bot], tasks: List[Task], *, as_text: bool
+    ) -> None:
+        if not tasks:
+            await ctx.send("No tasks.")
+            return
+
+        if as_text:
+            res = []
+
+            for i, t in enumerate(tasks):
+                task_type = "📝"
+                status = ""
+
+                if t.is_recurring:
+                    task_type = "🔁" if t.has_reminder.value else "🔁 🔕"
+                elif t.due_date:
+                    task_type = "🔔" if t.has_reminder.value else "🔕"
+
+                if t.is_done:
+                    status = "✅ "
+                elif t.is_overdue:
+                    status = "⚠️ "
+
+                p = (
+                    f"{status}{'📌 ' if t.is_important.value else ''}"
+                    f"{task_type} [{t.category.value}]"
+                )
+                res.append(f"{i + 1}. {p} {t.title.value}")
+
+            await ctx.send("\n".join(res)[:2000])
+            return
+
+        paged_embed = PagedEmbed(
+            ctx,
+            embeds=tuple(TaskEmbed(self.bot, t) for t in tasks),
+        )
+        await paged_embed.send()
+
+    @dc.command()
+    async def list(
+        self,
+        ctx: dc.Context[Bot],
+        category: Optional[str] = None,
+        as_text: bool = False,
+    ) -> None:
+        """Show your tasks list."""
+        user = await self.get_user_data(ctx)
+        utc_offset_hour = user.utc_offset_hour.value
+        tasks = await self.db.get_user_tasks(
+            str(ctx.author.id),
+            category=category or None,
+            utc_offset_hour=utc_offset_hour,
+        )
+        tasks.sort(key=lambda t: t.is_important.value, reverse=True)
+        tasks.sort(key=lambda t: t.due_date.timestamp() if t.due_date else math.inf)
+        tasks.sort(key=lambda t: t.last_done.value if t.last_done else math.inf)
+        await self._send_tasks(ctx, tasks, as_text=as_text)
 
     def _parse_due(self, due: str, utc_offset_hour: float) -> Optional[float | str]:
         tz = dt.utc_offset_hour_to_tz(utc_offset_hour)
@@ -185,42 +244,7 @@ class Tasks(BaseCog):
         tasks.sort(key=lambda t: t.is_important.value, reverse=True)
         tasks.sort(key=lambda t: t.due_date.timestamp() if t.due_date else math.inf)
         tasks.sort(key=lambda t: t.last_done.value if t.last_done else math.inf)
-
-        if not tasks:
-            await ctx.send("No tasks.")
-            return
-
-        if as_text:
-            res = []
-
-            for i, t in enumerate(tasks):
-                task_type = "📝"
-                status = ""
-
-                if t.is_recurring:
-                    task_type = "🔁" if t.has_reminder.value else "🔁 🔕"
-                elif t.due_date:
-                    task_type = "🔔" if t.has_reminder.value else "🔕"
-
-                if t.is_done:
-                    status = "✅ "
-                elif t.is_overdue:
-                    status = "⚠️ "
-
-                p = (
-                    f"{status}{'📌 ' if t.is_important.value else ''}"
-                    f"{task_type} [{t.category.value}]"
-                )
-                res.append(f"{i + 1}. {p} {t.title.value}")
-
-            await ctx.send("\n".join(res)[:2000])
-            return
-
-        paged_embed = PagedEmbed(
-            ctx,
-            embeds=tuple(TaskEmbed(self.bot, t) for t in tasks),
-        )
-        await paged_embed.send()
+        await self._send_tasks(ctx, tasks, as_text=as_text)
 
     async def _confirm_task_action(
         self, ctx: dc.Context[Bot], title: str
