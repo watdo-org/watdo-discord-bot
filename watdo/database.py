@@ -23,12 +23,13 @@ class Database:
 
     async def get_user_tasks(
         self,
-        uid: str,
+        user: User,
         *,
-        utc_offset_hour: float,
         category: Optional[str] = None,
         ignore_done: bool = False,
     ) -> List[Task]:
+        uid = user.uid.value
+        utc_offset_hour = user.utc_offset_hour.value
         tasks = []
         tasks_data = await self._cache.lrange(f"tasks.{uid}")
 
@@ -62,14 +63,8 @@ class Database:
 
         return tasks
 
-    async def get_user_task(
-        self,
-        uid: str,
-        *,
-        title: str,
-        utc_offset_hour: float,
-    ) -> Optional[Task]:
-        for task in await self.get_user_tasks(uid, utc_offset_hour=utc_offset_hour):
+    async def get_user_task(self, user: User, title: str) -> Optional[Task]:
+        for task in await self.get_user_tasks(user):
             if task.title.value == title:
                 return task
 
@@ -80,31 +75,26 @@ class Database:
 
     async def set_user_task(
         self,
-        uid: str,
+        user: User,
         *,
         old_task_str: str,
         new_task: Task,
-        utc_offset_hour: float,
     ) -> None:
-        for index, task in enumerate(
-            await self.get_user_tasks(uid, utc_offset_hour=utc_offset_hour)
-        ):
+        uid = user.uid.value
+
+        for index, task in enumerate(await self.get_user_tasks(user)):
             if task.as_json_str() == old_task_str:
                 await self._cache.lset(f"tasks.{uid}", index, new_task.as_json_str())
                 break
         else:
             raise ValueError("Task not found.")
 
-    async def done_user_task(self, uid: str, task: Task) -> None:
+    async def done_user_task(self, user: User, task: Task) -> None:
+        uid = str(user.uid.value)
         old_task_str = task.as_json_str()
         task.last_done = Timestamp(time.time())
 
-        await self.set_user_task(
-            uid,
-            old_task_str=old_task_str,
-            new_task=task,
-            utc_offset_hour=task.utc_offset_hour.value,
-        )
+        await self.set_user_task(user, old_task_str=old_task_str, new_task=task)
 
         if not task.is_recurring:
             await self.remove_user_task(uid, task)
@@ -118,15 +108,33 @@ class Database:
             await self._connection.lpush(f"archived_tasks.{uid}", data)
 
     async def get_user_data(self, uid: str) -> Optional[User]:
-        data = await self._cache.get(f"user.{uid}")
+        raw_data = await self._cache.get(f"user.{uid}")
 
-        if data is None:
+        if raw_data is None:
             return None
 
-        return User(**json.loads(data))
+        data = json.loads(raw_data)
 
-    async def set_user_data(self, uid: str, data: User) -> None:
-        await self._cache.set(f"user.{uid}", data.as_json_str())
+        try:
+            user = User(**data)
+        except TypeError as error:
+            reraise = True
+
+            if "required keyword-only argument" in str(error):
+                if "uid" in str(error):
+                    data["uid"] = uid
+                    user = User(**data)
+                    reraise = False
+
+            if reraise:
+                raise error
+
+            await self.set_user_data(user)
+
+        return user
+
+    async def set_user_data(self, user: User) -> None:
+        await self._cache.set(f"user.{user.uid.value}", user.as_json_str())
 
     async def get_command_shortcut(self, uid: str, name: str) -> Optional[str]:
         return await self._cache.hget(f"shortcuts.{uid}", name)

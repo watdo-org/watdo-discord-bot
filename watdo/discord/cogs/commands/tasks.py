@@ -18,10 +18,7 @@ class Tasks(BaseCog):
     async def summary(self, ctx: dc.Context[Bot]) -> None:
         """Show the summary of all your tasks."""
         user = await self.get_user_data(ctx)
-        utc_offset_hour = user.utc_offset_hour.value
-        tasks = await self.db.get_user_tasks(
-            str(ctx.author.id), utc_offset_hour=utc_offset_hour
-        )
+        tasks = await self.db.get_user_tasks(user)
         embed = Embed(self.bot, "TASKS SUMMARY")
 
         total = 0
@@ -101,12 +98,7 @@ class Tasks(BaseCog):
     ) -> None:
         """Show your tasks list."""
         user = await self.get_user_data(ctx)
-        utc_offset_hour = user.utc_offset_hour.value
-        tasks = await self.db.get_user_tasks(
-            str(ctx.author.id),
-            category=category or None,
-            utc_offset_hour=utc_offset_hour,
-        )
+        tasks = await self.db.get_user_tasks(user, category=category or None)
         tasks.sort(key=lambda t: t.is_important.value, reverse=True)
         tasks.sort(key=lambda t: t.due_date.timestamp() if t.due_date else math.inf)
         tasks.sort(key=lambda t: t.last_done.value if t.last_done else math.inf)
@@ -164,9 +156,7 @@ class Tasks(BaseCog):
         uid = str(ctx.author.id)
         user = await self.get_user_data(ctx)
         utc_offset_hour = user.utc_offset_hour.value
-        existing_task = await self.db.get_user_task(
-            uid, title=title, utc_offset_hour=utc_offset_hour
-        )
+        existing_task = await self.db.get_user_task(user, title)
         task = Task(
             title=title,
             category=category,
@@ -195,10 +185,9 @@ class Tasks(BaseCog):
         else:
             content = "Task updated ✅"
             await self.db.set_user_task(
-                uid,
+                user,
                 old_task_str=existing_task.as_json_str(),
                 new_task=task,
-                utc_offset_hour=utc_offset_hour,
             )
 
         await ctx.send(content, embed=TaskEmbed(self.bot, task))
@@ -212,12 +201,10 @@ class Tasks(BaseCog):
     ) -> None:
         """Show priority tasks."""
         user = await self.get_user_data(ctx)
-        utc_offset_hour = user.utc_offset_hour.value
         tasks = await self.db.get_user_tasks(
-            str(ctx.author.id),
+            user,
             category=category or None,
             ignore_done=True,
-            utc_offset_hour=utc_offset_hour,
         )
         tasks.sort(key=lambda t: t.is_important.value, reverse=True)
         tasks.sort(key=lambda t: t.due_date.timestamp() if t.due_date else math.inf)
@@ -228,12 +215,7 @@ class Tasks(BaseCog):
         self, ctx: dc.Context[Bot], title: str
     ) -> Tuple[Optional[discord.Message], Optional[Task]]:
         user = await self.get_user_data(ctx)
-        utc_offset_hour = user.utc_offset_hour.value
-        task = await self.db.get_user_task(
-            str(ctx.author.id),
-            title=title,
-            utc_offset_hour=utc_offset_hour,
-        )
+        task = await self.db.get_user_task(user, title=title)
 
         if task is None:
             await ctx.send(f'Task "{title}" not found ❌')
@@ -253,11 +235,11 @@ class Tasks(BaseCog):
     @dc.command()
     async def done(self, ctx: dc.Context[Bot], title: str) -> None:
         """Mark a task as done. If the task is not a recurring task, it will get removed."""
-        uid = str(ctx.author.id)
+        user = await self.get_user_data(ctx)
         message, task = await self._confirm_task_action(ctx, title)
 
         if (message is not None) and (task is not None):
-            await self.db.done_user_task(uid, task)
+            await self.db.done_user_task(user, task)
             await message.edit(
                 content="Done ✅",
                 embed=TaskEmbed(self.bot, task),

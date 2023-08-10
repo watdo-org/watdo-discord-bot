@@ -79,17 +79,13 @@ class Miscellaneous(BaseCog):
         It is recommended to run this command on my DM channel to avoid other users from seeing your data.
         """
         user = await self.get_user_data(ctx)
-        utc_offset_hour = user.utc_offset_hour.value
         uid = str(ctx.author.id)
         data: Dict[str, Any] = {}
 
         user_data = await self.db.get_user_data(uid)
 
         data["user"] = user_data.as_json() if user_data else None
-        data["tasks"] = [
-            t.as_json()
-            for t in await self.db.get_user_tasks(uid, utc_offset_hour=utc_offset_hour)
-        ]
+        data["tasks"] = [t.as_json() for t in await self.db.get_user_tasks(user)]
         data["shortcuts"] = await self.db.get_all_command_shortcuts(uid)
 
         folder = f"__TEMP__.{uid}"

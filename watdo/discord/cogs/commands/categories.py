@@ -12,10 +12,8 @@ class Categories(BaseCog):
     @dc.command()
     async def clist(self, ctx: dc.Context[Bot]) -> None:
         """Show your tasks by category."""
-        uid = str(ctx.author.id)
         user = await self.get_user_data(ctx)
-        utc_offset_hour = user.utc_offset_hour.value
-        tasks = await self.db.get_user_tasks(uid, utc_offset_hour=utc_offset_hour)
+        tasks = await self.db.get_user_tasks(user)
         categories = defaultdict(list)
 
         for task in tasks:
@@ -38,14 +36,8 @@ class Categories(BaseCog):
     ) -> None:
         """Rename a category."""
         new_name = new_name.strip()
-        uid = str(ctx.author.id)
         user = await self.get_user_data(ctx)
-        utc_offset_hour = user.utc_offset_hour.value
-        tasks = await self.db.get_user_tasks(
-            uid,
-            utc_offset_hour=utc_offset_hour,
-            category=old_name,
-        )
+        tasks = await self.db.get_user_tasks(user, category=old_name)
 
         if len(tasks) == 0:
             await ctx.send(f'Category "{old_name}" not found ❌')
@@ -55,12 +47,7 @@ class Categories(BaseCog):
             old_task_str = task.as_json_str()
             task.category.set(new_name)
             self.bot.loop.create_task(
-                self.db.set_user_task(
-                    uid,
-                    old_task_str=old_task_str,
-                    new_task=task,
-                    utc_offset_hour=utc_offset_hour,
-                )
+                self.db.set_user_task(user, old_task_str=old_task_str, new_task=task)
             )
 
         await ctx.send(f'Category "{old_name}" has been renamed to "{new_name}" ✅')
@@ -76,12 +63,7 @@ class Categories(BaseCog):
         """Delete a category."""
         uid = str(ctx.author.id)
         user = await self.get_user_data(ctx)
-        utc_offset_hour = user.utc_offset_hour.value
-        tasks = await self.db.get_user_tasks(
-            uid,
-            utc_offset_hour=utc_offset_hour,
-            category=name,
-        )
+        tasks = await self.db.get_user_tasks(user, category=name)
 
         if len(tasks) == 0:
             await ctx.send(f'Category "{name}" not found ❌')

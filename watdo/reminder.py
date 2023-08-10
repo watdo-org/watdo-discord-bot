@@ -2,7 +2,7 @@ import asyncio
 from typing import TYPE_CHECKING
 import discord
 from watdo import dt
-from watdo.models import Task
+from watdo.models import Task, User
 from watdo.database import Database
 from watdo.safe_data import Timestamp
 from watdo.discord.embeds import TaskEmbed
@@ -43,7 +43,12 @@ class Reminder:
                 except discord.HTTPException:
                     pass
 
-    async def _update_task(self, uid: str, user: discord.User, task: Task) -> None:
+    async def _update_task(
+        self,
+        user: discord.User,
+        user_data: User,
+        task: Task,
+    ) -> None:
         old_task_str = task.as_json_str()
         utc_offset_hour = task.utc_offset_hour.value
 
@@ -53,17 +58,11 @@ class Reminder:
         else:
             task.next_reminder = None
 
-        await self.db.set_user_task(
-            uid,
-            old_task_str=old_task_str,
-            new_task=task,
-            utc_offset_hour=utc_offset_hour,
-        )
-
+        await self.db.set_user_task(user_data, old_task_str=old_task_str, new_task=task)
         await self.remind(user, task)
 
         if task.is_auto_done.value:
-            await self.db.done_user_task(uid, task)
+            await self.db.done_user_task(user_data, task)
 
     async def _run(self) -> None:
         while True:
@@ -77,7 +76,7 @@ class Reminder:
                 utc_offset_hour = user_data.utc_offset_hour.value
 
                 for task_index, task in enumerate(
-                    await self.db.get_user_tasks(uid, utc_offset_hour=utc_offset_hour)
+                    await self.db.get_user_tasks(user_data)
                 ):
                     if task.next_reminder is None:
                         continue
@@ -91,7 +90,9 @@ class Reminder:
                         if user is None:
                             continue
 
-                        self.bot.loop.create_task(self._update_task(uid, user, task))
+                        self.bot.loop.create_task(
+                            self._update_task(user, user_data, task)
+                        )
 
             await asyncio.sleep(1)
 

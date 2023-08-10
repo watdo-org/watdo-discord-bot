@@ -166,5 +166,6 @@ class Task(Model):
 
 
 class User(Model):
-    def __init__(self, *, utc_offset_hour: float, created_at: float) -> None:
+    def __init__(self, *, uid: int, utc_offset_hour: float, created_at: float) -> None:
+        self.uid = SnowflakeID(uid)
         super().__init__(utc_offset_hour=utc_offset_hour, created_at=created_at)

@@ -182,7 +182,11 @@ class BaseCog(dc.Cog):
                     },
                 )
             )[0]
-            user = User(utc_offset_hour=utc_offset, created_at=time.time())
-            await self.db.set_user_data(uid, user)
+            user = User(
+                uid=ctx.author.id,
+                utc_offset_hour=utc_offset,
+                created_at=time.time(),
+            )
+            await self.db.set_user_data(user)
 
         return user
