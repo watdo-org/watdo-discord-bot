@@ -83,29 +83,7 @@ class Tasks(BaseCog):
             return
 
         if as_text:
-            res = []
-
-            for i, t in enumerate(tasks):
-                task_type = "📝"
-                status = ""
-
-                if t.is_recurring:
-                    task_type = "🔁" if t.has_reminder.value else "🔁 🔕"
-                elif t.due_date:
-                    task_type = "🔔" if t.has_reminder.value else "🔕"
-
-                if t.is_done:
-                    status = "✅ "
-                elif t.is_overdue:
-                    status = "⚠️ "
-
-                p = (
-                    f"{status}{'📌 ' if t.is_important.value else ''}"
-                    f"{task_type} [{t.category.value}]"
-                )
-                res.append(f"{i + 1}. {p} {t.title.value}")
-
-            await ctx.send("\n".join(res)[:2000])
+            await ctx.send(self.tasks_to_text(tasks)[:2000])
             return
 
         paged_embed = PagedEmbed(

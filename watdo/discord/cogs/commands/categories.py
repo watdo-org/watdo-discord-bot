@@ -1,11 +1,36 @@
+from collections import defaultdict
 from discord.ext import commands as dc
 from watdo.models import Task
 from watdo.discord import Bot
 from watdo.discord.cogs import BaseCog
+from watdo.discord.embeds import Embed
 
 
 class Categories(BaseCog):
     """Manage your tasks categories."""
+
+    @dc.command()
+    async def clist(self, ctx: dc.Context[Bot]) -> None:
+        """Show your tasks by category."""
+        uid = str(ctx.author.id)
+        user = await self.get_user_data(ctx)
+        utc_offset_hour = user.utc_offset_hour.value
+        tasks = await self.db.get_user_tasks(uid, utc_offset_hour=utc_offset_hour)
+        categories = defaultdict(list)
+
+        for task in tasks:
+            categories[task.category.value].append(task)
+
+        embed = Embed(self.bot, "TASKS")
+
+        for category, tasks in categories.items():
+            embed.add_field(
+                name=category,
+                value=self.tasks_to_text(tasks, no_category=True)[:1024],
+                inline=False,
+            )
+
+        await ctx.send(embed=embed)
 
     @dc.command(aliases=["rc"])
     async def rename_category(
