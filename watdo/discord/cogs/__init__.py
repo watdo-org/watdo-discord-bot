@@ -6,6 +6,7 @@ import discord
 from discord.ext import commands as dc
 from watdo.models import User
 from watdo.database import Database
+from watdo.safe_data import UTCOffsetHour
 
 if TYPE_CHECKING:
     from watdo.discord import Bot
@@ -131,6 +132,16 @@ class BaseCog(dc.Cog):
             answers.append(answer)
 
         return answers
+
+    async def _validate_utc_offset(self, message: discord.Message) -> Optional[float]:
+        try:
+            return UTCOffsetHour(float(message.content)).value
+        except Exception:
+            await message.reply(
+                "Please only send a number between -24 and 24.\n"
+                "Example: `8` for UTC+8."
+            )
+            return None
 
     async def get_user_data(self, ctx: dc.Context["Bot"]) -> User:
         uid = str(ctx.author.id)

@@ -8,7 +8,7 @@ from discord.ext import commands as dc
 from watdo import dt
 from watdo.models import Task
 from watdo.discord import Bot
-from watdo.safe_data import Timestamp, UTCOffsetHour, String
+from watdo.safe_data import Timestamp, String
 from watdo.discord.cogs import BaseCog
 from watdo.discord.embeds import Embed, TaskEmbed, PagedEmbed
 
@@ -105,16 +105,6 @@ class Tasks(BaseCog):
             return rr.timestamp()
 
         return None
-
-    async def _validate_utc_offset(self, message: discord.Message) -> Optional[float]:
-        try:
-            return UTCOffsetHour(float(message.content)).value
-        except Exception:
-            await message.reply(
-                "Please only send a number between -24 and 24.\n"
-                "Example: `8` for UTC+8."
-            )
-            return None
 
     @dc.command()
     async def todo(
@@ -280,64 +270,6 @@ class Tasks(BaseCog):
                 content="Cancelled ✅",
                 embed=TaskEmbed(self.bot, task),
             )
-
-    @dc.command(aliases=["rc"])
-    async def rename_category(
-        self, ctx: dc.Context[Bot], old_name: str, new_name: str
-    ) -> None:
-        """Rename a category."""
-        new_name = new_name.strip()
-        uid = str(ctx.author.id)
-        user = await self.get_user_data(ctx)
-        utc_offset_hour = user.utc_offset_hour.value
-        tasks = await self.db.get_user_tasks(
-            uid,
-            utc_offset_hour=utc_offset_hour,
-            category=old_name,
-        )
-
-        if len(tasks) == 0:
-            await ctx.send(f'Category "{old_name}" not found ❌')
-            return
-
-        for task in tasks:
-            old_task_str = task.as_json_str()
-            task.category.set(new_name)
-            self.bot.loop.create_task(
-                self.db.set_user_task(
-                    uid,
-                    old_task_str=old_task_str,
-                    new_task=task,
-                    utc_offset_hour=utc_offset_hour,
-                )
-            )
-
-        await ctx.send(f'Category "{old_name}" has been renamed to "{new_name}" ✅')
-
-    async def _delete_category_task(
-        self, ctx: dc.Context[Bot], uid: str, task: Task
-    ) -> None:
-        await self.db.remove_user_task(uid, task)
-        await ctx.send(f'Task "{task.title.value}" has been removed ✅')
-
-    @dc.command(aliases=["dc"])
-    async def delete_category(self, ctx: dc.Context[Bot], name: str) -> None:
-        """Delete a category."""
-        uid = str(ctx.author.id)
-        user = await self.get_user_data(ctx)
-        utc_offset_hour = user.utc_offset_hour.value
-        tasks = await self.db.get_user_tasks(
-            uid,
-            utc_offset_hour=utc_offset_hour,
-            category=name,
-        )
-
-        if len(tasks) == 0:
-            await ctx.send(f'Category "{name}" not found ❌')
-            return
-
-        for task in tasks:
-            self.bot.loop.create_task(self._delete_category_task(ctx, uid, task))
 
 
 async def setup(bot: Bot) -> None:
