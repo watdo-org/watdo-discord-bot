@@ -216,9 +216,11 @@ class Tasks(BaseCog):
             await ctx.send("\n".join(res)[:2000])
             return
 
-        paged_embed = PagedEmbed(self.bot)
-        paged_embed.add_pages(*(TaskEmbed(self.bot, t) for t in tasks))
-        paged_embed.send(ctx)
+        paged_embed = PagedEmbed(
+            ctx,
+            embeds=tuple(TaskEmbed(self.bot, t) for t in tasks),
+        )
+        await paged_embed.send()
 
     async def _confirm_task_action(
         self, ctx: dc.Context[Bot], title: str
