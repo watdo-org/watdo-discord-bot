@@ -43,7 +43,7 @@ class Reminder:
                 except discord.HTTPException:
                     pass
 
-    async def _update_task(self, uid: str, task: Task) -> None:
+    async def _update_task(self, uid: str, user: discord.User, task: Task) -> None:
         old_task_str = task.as_json_str()
         utc_offset_hour = task.utc_offset_hour.value
 
@@ -59,6 +59,8 @@ class Reminder:
             new_task=task,
             utc_offset_hour=utc_offset_hour,
         )
+
+        await self.remind(user, task)
 
         if task.is_auto_done.value:
             await self.db.done_user_task(uid, task)
@@ -89,8 +91,7 @@ class Reminder:
                         if user is None:
                             continue
 
-                        self.bot.loop.create_task(self.remind(user, task))
-                        self.bot.loop.create_task(self._update_task(uid, task))
+                        self.bot.loop.create_task(self._update_task(uid, user, task))
 
             await asyncio.sleep(1)
 
