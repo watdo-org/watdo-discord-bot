@@ -79,7 +79,7 @@ class Command {
             }
 
             if (hasWhiteSpace(value)) {
-                value = `"${value}"`;
+                value = `"${value.replaceAll('"', '\\"')}"`;
             }
 
             i.push(value || '""');
