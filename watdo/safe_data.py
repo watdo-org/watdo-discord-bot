@@ -25,7 +25,7 @@ class String(SafeData[str]):
     def __init__(self, value: str, *, min_len: int, max_len: float) -> None:
         self.min_len = min_len
         self.max_len = max_len
-        super().__init__(str, value)
+        super().__init__(str, value.strip())
 
     def _is_valid(self) -> bool:
         val_len = len(self.value)

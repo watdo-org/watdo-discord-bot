@@ -70,8 +70,8 @@ class Task(Model):
         channel_id: Optional[int] = None,
         created_at: float,
     ) -> None:
-        self.title = String(title.strip(), min_len=1, max_len=200)
-        self.category = String(category.strip(), min_len=0, max_len=50)
+        self.title = String(title, min_len=1, max_len=200)
+        self.category = String(category, min_len=0, max_len=50)
         self.is_important = Boolean(is_important)
         self.due: Optional[Timestamp | String]
         self.description = (

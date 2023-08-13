@@ -78,7 +78,7 @@ class Command {
                 value = element.value;
             }
 
-            if (hasWhiteSpace(value)) {
+            if (hasWhiteSpace(value) || value.includes('"')) {
                 value = `"${value.replaceAll('"', '\\"')}"`;
             }
 
