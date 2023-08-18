@@ -5,9 +5,11 @@ from typing import cast, Any
 import discord
 from discord.ext import commands as dc
 from watdo import dt
+from watdo.errors import CancelCommand
 from watdo.environ import IS_DEV
 from watdo.logging import get_logger
 from watdo.database import Database
+from watdo.discord.cogs import BaseCog
 
 
 class Bot(dc.Bot):
@@ -69,3 +71,16 @@ class Bot(dc.Bot):
         logger.debug(f"Synced {len(synced_commands)} slash command(s)")
         logger.debug(f"Timezone: {dt.local_tz()}")
         logger.info("watdo is ready!!")
+
+    async def _on_command_error_event(
+        self, ctx: dc.Context["Bot"], error: dc.CommandError
+    ) -> None:
+        if isinstance(error, dc.MissingRequiredArgument) and ctx.command is not None:
+            params = BaseCog.parse_params(ctx.command)
+            await ctx.send(f"{ctx.prefix}{ctx.invoked_with} {params}")
+        elif isinstance(error, dc.CommandNotFound):
+            await ctx.send(f'No command "{ctx.invoked_with}" ❌')
+        elif isinstance(error, CancelCommand):
+            pass
+        else:
+            await ctx.send(f"**{type(error).__name__}:** {error}")

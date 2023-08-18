@@ -1,11 +1,12 @@
-from typing import Dict
 from discord.ext import commands as dc
 from watdo.discord import Bot
 from watdo.discord.cogs import BaseCog
 
 
 class Tasks(BaseCog):
-    pass
+    @dc.hybrid_command()
+    async def summary(self, ctx: dc.Context[Bot]) -> None:
+        """Show the summary of all your tasks."""
 
 
 async def setup(bot: Bot) -> None:
