@@ -1,18 +1,16 @@
 import os
 import time
 import logging
+import inspect
 from contextlib import contextmanager
 from typing import Optional, Union, Iterator
-from watdo.environ import IS_DEV
+
+LOGGING_LEVEL = os.getenv("LOGGING_LEVEL") or logging.DEBUG
 
 
-def get_logger(
-    name: str,
-    *,
-    level: Union[int, str] = os.getenv("DEFAULT_LOGGING_LEVEL") or logging.DEBUG,
-) -> logging.Logger:
+def get_logger(name: str) -> logging.Logger:
     logger = logging.getLogger(name)
-    logger.setLevel(level)
+    logger.setLevel(LOGGING_LEVEL)
 
     if not logger.hasHandlers():
         stream_handler = logging.StreamHandler()
@@ -24,9 +22,15 @@ def get_logger(
         logger.addHandler(file_handler)
 
     for handler in logger.handlers:
-        handler.setLevel(level)
+        handler.setLevel(LOGGING_LEVEL)
 
     return logger
+
+
+def trace() -> None:
+    caller = inspect.getframeinfo(inspect.stack()[1][0])
+    logger = get_logger(f"Trace {caller.filename}")
+    logger.debug(f"Line {caller.lineno}")
 
 
 class Formatter(logging.Formatter):
@@ -35,15 +39,6 @@ class Formatter(logging.Formatter):
         self.last_record: Optional[logging.LogRecord] = None
 
     def format(self, record: logging.LogRecord) -> str:
-        if not IS_DEV and not self.colored:
-            if record.levelno > logging.INFO:
-                from watdo import app_context
-
-                try:
-                    app_context.bot.log(record)
-                except Exception:
-                    pass
-
         space = " " * (len("CRITICAL") - len(record.levelname))
 
         if self.colored:
