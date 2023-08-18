@@ -1,10 +1,14 @@
 import asyncio
-from watdo.logging import get_logger
+from watdo.discord import Bot
+from watdo.environ import DISCORD_TOKEN
 from watdo._main_runner import async_main_runner
 
 
 async def async_main(loop: asyncio.AbstractEventLoop) -> int:
-    get_logger("main").info("Hello world!!")
+    bot = Bot(loop=loop)
+
+    await bot.start(DISCORD_TOKEN)
+
     return 0
 
 

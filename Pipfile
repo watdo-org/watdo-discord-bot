@@ -12,6 +12,10 @@ mypy_install_types = "mypy --install-types"
 
 [packages]
 uvloop = {version = "*", sys_platform = "== 'linux'"}
+"discord.py" = "*"
+charset-normalizer = "*"
+redis = "*"
+recurrent = "*"
 
 [dev-packages]
 mypy = "*"
