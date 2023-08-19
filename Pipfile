@@ -17,6 +17,7 @@ charset-normalizer = "*"
 redis = "*"
 recurrent = "*"
 python-dateutil = "*"
+dateparser = "*"
 
 [dev-packages]
 mypy = "*"

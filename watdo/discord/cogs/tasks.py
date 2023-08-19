@@ -3,6 +3,7 @@ import time
 from uuid import uuid4
 from typing import Dict, Optional, Tuple, List
 import recurrent
+import dateparser
 import discord
 from discord.ext import commands as dc
 from watdo import dt
@@ -114,6 +115,18 @@ class Tasks(BaseCog):
         await self._send_tasks(ctx, tasks, as_text=as_text)
 
     def _parse_due(self, ctx: dc.Context[Bot], due: str, utc_offset: float) -> DueT:
+        tz = dt.utc_offset_to_tz(utc_offset)
+        date = dateparser.parse(
+            due,
+            settings={
+                "RETURN_AS_TIMEZONE_AWARE": True,
+                "TIMEZONE": tz.tzname(dt.date_now(utc_offset)) or "",
+            },
+        )
+
+        if date is not None:
+            return date.timestamp()
+
         rr: Optional[str | dt.datetime] = recurrent.parse(
             due,
             now=dt.date_now(utc_offset),
