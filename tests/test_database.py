@@ -21,4 +21,7 @@ class TestDatabase:
 
             deltas.append(cast(float, result["delta"]))
 
-        assert deltas[0] / 4 > deltas[1]
+        first_request_speed = deltas[0]
+        second_request_speed = deltas[1]
+        partida = first_request_speed / 4
+        assert partida > second_request_speed
