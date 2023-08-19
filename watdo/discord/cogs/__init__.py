@@ -19,6 +19,7 @@ from watdo.models import Profile
 from watdo.errors import CancelCommand
 from watdo.database import Database
 from watdo.safe_data import UTCOffset
+from watdo.discord.embeds import ProfileEmbed
 
 if TYPE_CHECKING:
     from watdo.discord import Bot
@@ -235,6 +236,7 @@ class BaseCog(dc.Cog):
                     raise CancelCommand()
 
                 await profile.add_channel(self.db, ctx.channel.id)
+                await ctx.send(f"Channel added to profile `{profile_id}` ✅")
                 return await self.get_profile(ctx)
 
             utc_offset = (
@@ -253,5 +255,8 @@ class BaseCog(dc.Cog):
             )
             self.bot.loop.create_task(profile.save(self.db))
             self.bot.loop.create_task(profile.add_channel(self.db, ctx.channel.id))
+            await ctx.send(
+                "New profile created ✅", embed=ProfileEmbed(self.bot, profile)
+            )
 
         return profile
