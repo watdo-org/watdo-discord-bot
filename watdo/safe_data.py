@@ -40,6 +40,9 @@ class String(SafeData[str], ABC):
     min_len: int
     max_len: int
 
+    def _set(self, value: str) -> str:
+        return super()._set(value.strip())
+
     @classmethod
     def validate(cls, value: str) -> None:
         val_len = len(value)
