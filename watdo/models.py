@@ -1,5 +1,4 @@
 import json
-from uuid import uuid4
 from abc import ABC, abstractmethod
 from typing import cast, Optional, Dict, Any, TypeVar, Generic, List
 from dateutil import rrule
@@ -119,44 +118,6 @@ class Profile(Model):
 
 class Task(Model):
     @staticmethod
-    def _fix_data(profile: Profile, data: Dict[str, Any]) -> None:
-        should_update = False
-        keys_to_delete = ("channel_id", "utc_offset_hour")
-        keys_to_delete_if_not_scheduled = (
-            "due",
-            "has_reminder",
-            "is_auto_done",
-            "next_reminder",
-        )
-
-        for key in keys_to_delete:
-            try:
-                del data[key]
-                should_update = True
-            except KeyError:
-                pass
-
-        if data.get("due") is None:
-            for key in keys_to_delete_if_not_scheduled:
-                try:
-                    del data[key]
-                    should_update = True
-                except KeyError:
-                    pass
-
-        if data.get("profile_id") is None:
-            data["profile_id"] = profile.uuid.value
-            should_update = True
-
-        if data.get("uuid") is None:
-            data["uuid"] = uuid4().hex
-            should_update = True
-
-        if data.get("created_by") is None:
-            data["created_by"] = profile.created_by.value
-            should_update = True
-
-    @staticmethod
     async def get_tasks_of_profile(
         db: Database,
         profile: Profile,
@@ -164,12 +125,12 @@ class Task(Model):
         category: Optional[str] = None,
         ignore_done: bool = False,
     ) -> List["Task"]:
-        tasks_data = await db.lrange(f"tasks:profile.{profile.uuid.value}")
+        profile_id = profile.uuid.value
+        tasks_data = await db.lrange(f"tasks:profile.{profile_id}")
         tasks = []
 
-        for raw_data in tasks_data:
+        for index, raw_data in enumerate(tasks_data):
             data = json.loads(raw_data)
-            Task._fix_data(profile, data)
 
             if data.get("due") is None:
                 task = Task(db, profile=profile, **data)
@@ -203,8 +164,6 @@ class Task(Model):
         created_by: int,
     ) -> None:
         self._profile = profile
-        self._timezone = dt.utc_offset_to_tz(self._profile.utc_offset.value)
-
         self.title = TaskTitle(title)
         self.category = TaskCategory(category)
         self.is_important = Boolean(is_important)
@@ -218,7 +177,7 @@ class Task(Model):
 
     @property
     def tz(self) -> dt.timezone:
-        return self._timezone
+        return dt.utc_offset_to_tz(self._profile.utc_offset.value)
 
     @property
     def date_created(self) -> dt.datetime:
@@ -236,9 +195,17 @@ class Task(Model):
         return dt.fromtimestamp(self.last_done.value, self._profile.utc_offset.value)
 
     async def save(self) -> None:
-        await self.db.lpush(
-            f"tasks:profile.{self._profile.uuid.value}", self.as_json_str()
-        )
+        tasks = await self.get_tasks_of_profile(self.db, self._profile)
+        profile_id = self._profile.uuid.value
+
+        for index, task in enumerate(tasks):
+            if task.uuid.value == self.uuid.value:
+                await self.db.lset(
+                    f"tasks:profile.{profile_id}", index, self.as_json_str()
+                )
+                break
+        else:
+            await self.db.lpush(f"tasks:profile.{profile_id}", self.as_json_str())
 
 
 class ScheduledTask(Task, Generic[DueT]):
