@@ -72,6 +72,12 @@ class Number(Generic[N], SafeData[N], ABC):
                 )
 
 
+class Boolean(SafeData[bool]):
+    @classmethod
+    def validate(cls, value: bool) -> None:
+        pass
+
+
 class UUID(String):
     min_len = 32
     max_len = 32
@@ -91,3 +97,23 @@ class UTCOffset(Number[float]):
     is_inclusive = False
     min_val = -24
     max_val = 24
+
+
+class RRuleString(String):
+    min_len = 7
+    max_len = 1000
+
+
+class TaskTitle(String):
+    min_len = 1
+    max_len = 200
+
+
+class TaskCategory(String):
+    min_len = 0
+    max_len = 50
+
+
+class TaskDescription(String):
+    min_len = 0
+    max_len = 4000
