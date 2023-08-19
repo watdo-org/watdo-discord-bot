@@ -11,6 +11,7 @@ from typing import (
     Dict,
     Callable,
     Awaitable,
+    Mapping,
 )
 import discord
 from discord.ext import commands as dc
@@ -93,49 +94,64 @@ class BaseCog(dc.Cog):
 
         await asyncio.gather(*tasks)
 
-    async def wait_for_confirmation(
+    def _edit_choices(
+        self,
+        message: discord.Message,
+        mapping: Dict[str, str],
+        *,
+        choice: Optional[str] = None,
+    ) -> None:
+        choices = []
+
+        for emoji, text in mapping.items():
+            if emoji == choice:
+                text = f"__**{text}**__"
+
+            choices.append(f"- {emoji}   {text}")
+
+        c = "\n".join(choices)
+        self.bot.loop.create_task(message.edit(content=f"{message.content}\n{c}"))
+
+    async def wait_for_choice(
         self,
         ctx: dc.Context["Bot"],
         message: discord.Message,
         *,
-        raise_error: bool = False,
-    ) -> bool:
-        buttons = ("✅", "❌")
+        mapping: Dict[str, str],
+        default: str,
+    ) -> str:
+        emojis = tuple(mapping.keys())
 
         def check(reaction: discord.Reaction, user: discord.User) -> bool:
             if user.id == ctx.author.id:
                 if reaction.message.id == message.id:
-                    if str(reaction) in buttons:
+                    if str(reaction) in emojis:
                         return True
 
             return False
 
-        self.bot.loop.create_task(self.add_reactions(message, buttons))
+        self._edit_choices(message, mapping)
+        self.bot.loop.create_task(self.add_reactions(message, emojis))
 
         try:
             reaction, user = await self.bot.wait_for(
                 "reaction_add", check=check, timeout=60
             )
             reaction = str(reaction)
+            self._edit_choices(message, mapping, choice=reaction)
+            return reaction
         except asyncio.TimeoutError:
-            if raise_error:
-                raise CancelCommand()
-
-            return False
-
-        if reaction == buttons[0]:
-            return True
-
-        if raise_error:
-            raise CancelCommand()
-
-        return False
+            self._edit_choices(message, mapping, choice=default)
+            return default
 
     async def interview(
         self,
         ctx: dc.Context["Bot"],
         *,
-        questions: Dict[str, Callable[[discord.Message], Awaitable[Any]]],
+        questions: Mapping[
+            str,
+            None | Callable[[discord.Message], Awaitable[Any]],
+        ],
     ) -> List[Any]:
         def check(m: discord.Message) -> bool:
             if m.channel.id == ctx.channel.id:
@@ -145,8 +161,19 @@ class BaseCog(dc.Cog):
             return False
 
         async def ask(question: str) -> Any:
-            message = await self.bot.wait_for("message", check=check)
-            return await questions[question](message)
+            try:
+                message = await self.bot.wait_for(
+                    "message", check=check, timeout=60 * 5
+                )
+            except asyncio.TimeoutError:
+                raise CancelCommand()
+
+            validator = questions[question]
+
+            if validator is None:
+                return message.content
+
+            return await validator(message)
 
         answers = []
         keys = list(questions.keys())
@@ -177,8 +204,38 @@ class BaseCog(dc.Cog):
         profile = await Profile.from_channel_id(self.db, ctx.channel.id)
 
         if profile is None:
-            message = await ctx.send("Current channel has no profile. Create one?")
-            await self.wait_for_confirmation(ctx, message, raise_error=True)
+            message = await ctx.send(
+                "Current channel has no profile. What would you like to do?"
+            )
+            reaction = await self.wait_for_choice(
+                ctx,
+                message,
+                mapping={
+                    "♻️": "Add this channel to an existing profile",
+                    "✅": "Create a new profile for this channel",
+                    "❌": "Cancel",
+                },
+                default="❌",
+            )
+
+            if reaction == "❌":
+                raise CancelCommand()
+
+            if reaction == "♻️":
+                questions = {"What is the ID of the profile?": None}
+                profile_id = (await self.interview(ctx, questions=questions))[0]
+                profile = await Profile.from_id(self.db, profile_id)
+
+                if profile is None:
+                    await ctx.send("Profile not found ❌")
+                    raise CancelCommand()
+
+                if profile.created_by.value != ctx.author.id:
+                    await ctx.send("You don't own that profile ❌")
+                    raise CancelCommand()
+
+                await profile.add_channel(self.db, ctx.channel.id)
+                return await self.get_profile(ctx)
 
             utc_offset = (
                 await self.interview(
@@ -195,6 +252,6 @@ class BaseCog(dc.Cog):
                 created_by=ctx.author.id,
             )
             self.bot.loop.create_task(profile.save(self.db))
-            self.bot.loop.create_task(profile.add_to_channel(self.db, ctx.channel.id))
+            self.bot.loop.create_task(profile.add_channel(self.db, ctx.channel.id))
 
         return profile

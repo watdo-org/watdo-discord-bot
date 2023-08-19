@@ -58,7 +58,15 @@ class Profile(Model):
         cls, db: Database, channel_id: int
     ) -> Optional["Profile"]:
         profile_id = await db.get(f"profile:channel.{channel_id}")
-        raw_data = await db.get(f"profile.{profile_id}")
+
+        if profile_id is None:
+            return None
+
+        return await cls.from_id(db, profile_id)
+
+    @classmethod
+    async def from_id(cls, db: Database, uuid: str) -> Optional["Profile"]:
+        raw_data = await db.get(f"profile.{uuid}")
 
         if raw_data is None:
             return None
@@ -79,5 +87,5 @@ class Profile(Model):
     async def save(self, db: Database) -> None:
         await db.set(f"profile.{self.uuid.value}", self.as_json_str())
 
-    async def add_to_channel(self, db: Database, channel_id: int) -> None:
+    async def add_channel(self, db: Database, channel_id: int) -> None:
         await db.set(f"profile:channel.{channel_id}", self.uuid.value)
