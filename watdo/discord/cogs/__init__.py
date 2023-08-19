@@ -190,11 +190,11 @@ class BaseCog(dc.Cog):
             )[0]
             profile = Profile(
                 utc_offset=utc_offset,
-                channel_id=ctx.channel.id,
                 uuid=uuid4().hex,
                 created_at=time.time(),
                 created_by=ctx.author.id,
             )
             self.bot.loop.create_task(profile.save(self.db))
+            self.bot.loop.create_task(profile.add_to_channel(self.db, ctx.channel.id))
 
         return profile
