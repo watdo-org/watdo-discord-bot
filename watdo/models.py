@@ -127,6 +127,16 @@ class Profile(Model):
 
 class Task(Model):
     @staticmethod
+    async def from_title(
+        db: Database, profile: Profile, title: str
+    ) -> Optional["Task"]:
+        for task in await Task.get_tasks_of_profile(db, profile):
+            if task.title.value == title:
+                return task
+
+        return None
+
+    @staticmethod
     async def get_tasks_of_profile(
         db: Database,
         profile: Profile,
@@ -165,8 +175,8 @@ class Task(Model):
         title: str,
         category: str,
         is_important: bool,
-        description: Optional[str] = None,
-        last_done: Optional[float] = None,
+        description: Optional[str],
+        last_done: Optional[float],
         profile_id: str,
         uuid: str,
         created_at: float,
@@ -188,6 +198,10 @@ class Task(Model):
             created_by=created_by,
             channel_id=channel_id,
         )
+
+    @property
+    def profile(self) -> Profile:
+        return self._profile
 
     @property
     def tz(self) -> dt.timezone:
@@ -244,8 +258,8 @@ class ScheduledTask(Task, Generic[DueT]):
         title: str,
         category: str,
         is_important: bool,
-        description: Optional[str] = None,
-        last_done: Optional[float] = None,
+        description: Optional[str],
+        last_done: Optional[float],
         profile_id: str,
         due: DueT,
         has_reminder: bool = True,

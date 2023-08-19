@@ -172,6 +172,34 @@ class BaseCog(dc.Cog):
             self._edit_choices(message, mapping, choice=default)
             return default
 
+    async def wait_for_confirmation(
+        self, ctx: dc.Context["Bot"], message: discord.Message
+    ) -> bool:
+        buttons = ("✅", "❌")
+
+        def check(reaction: discord.Reaction, user: discord.User) -> bool:
+            if user.id == ctx.author.id:
+                if reaction.message.id == message.id:
+                    if str(reaction) in buttons:
+                        return True
+
+            return False
+
+        self.bot.loop.create_task(self.add_reactions(message, buttons))
+
+        try:
+            reaction, user = await self.bot.wait_for(
+                "reaction_add", check=check, timeout=60
+            )
+            reaction = str(reaction)
+        except asyncio.TimeoutError:
+            return False
+
+        if reaction == buttons[0]:
+            return True
+
+        return False
+
     async def interview(
         self,
         ctx: dc.Context["Bot"],
