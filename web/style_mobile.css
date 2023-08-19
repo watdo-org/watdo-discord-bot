@@ -1,0 +1,12 @@
+@media only screen and (max-width: 768px) {
+    body {
+        flex-flow: wrap;
+    }
+
+    .outputs-section {
+        width: 100%;
+        border-left: none;
+        border-top: 5px solid var(--primary);
+        padding-bottom: 20px;
+    }
+}

@@ -4,6 +4,7 @@ import logging
 import inspect
 from contextlib import contextmanager
 from typing import Optional, Union, Iterator, Dict
+from watdo.environ import IS_DEV
 
 LOGGING_LEVEL = os.getenv("LOGGING_LEVEL") or logging.DEBUG
 
@@ -39,6 +40,15 @@ class Formatter(logging.Formatter):
         self.last_record: Optional[logging.LogRecord] = None
 
     def format(self, record: logging.LogRecord) -> str:
+        if not IS_DEV and not self.colored:
+            if record.levelno > logging.INFO:
+                from watdo import bot
+
+                try:
+                    bot.log(record)
+                except Exception:
+                    pass
+
         space = " " * (len("CRITICAL") - len(record.levelname))
 
         if self.colored:

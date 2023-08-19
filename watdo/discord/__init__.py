@@ -1,6 +1,7 @@
 import os
 import glob
 import asyncio
+import logging
 from typing import cast, Any
 import discord
 from discord.ext import commands as dc
@@ -10,11 +11,17 @@ from watdo.environ import IS_DEV, SYNC_SLASH_COMMANDS
 from watdo.logging import get_logger
 from watdo.database import Database
 from watdo.discord.cogs import BaseCog
+from watdo.discord.embeds import ErrorEmbed
 
 
 class Bot(dc.Bot):
     def __init__(self, *, loop: asyncio.AbstractEventLoop, database: Database) -> None:
-        super().__init__(loop=loop, command_prefix="$", intents=discord.Intents.all())
+        super().__init__(
+            loop=loop,
+            command_prefix="$" if IS_DEV else "watdo ",
+            help_command=None,
+            intents=discord.Intents.all(),
+        )
         self.db = database
         self.color = discord.Colour.from_rgb(191, 155, 231)
 
@@ -57,6 +64,25 @@ class Bot(dc.Bot):
 
         await super().start(token, reconnect=reconnect)
 
+    async def on_message(self, message: discord.Message) -> None:
+        try:
+            bot_user = cast(discord.User, self.user)
+
+            if message.author.id == bot_user.id:
+                return
+
+            if not message.content.startswith(str(self.command_prefix)):
+                # self.loop.create_task(self.process_shortcut_commands(message))
+
+                if bot_user.mention in message.content.replace("<@!", "<@"):
+                    await message.reply(f"Type `{self.command_prefix}help` for help.")
+
+            else:
+                await self.process_commands(message)
+        except Exception as error:
+            get_logger("Bot.on_message").exception(error)
+            raise error
+
     async def _on_ready_event(self) -> None:
         logger = get_logger("Bot.on_ready")
         logger.info("watdo is ready!!")
@@ -86,3 +112,7 @@ class Bot(dc.Bot):
             pass
         else:
             await ctx.send(f"**{type(error).__name__}:** {error}")
+
+    def log(self, record: logging.LogRecord) -> None:
+        channel = cast(discord.TextChannel, self.get_channel(1086519345972260894))
+        self.loop.create_task(channel.send(embed=ErrorEmbed(record)))

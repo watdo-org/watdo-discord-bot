@@ -4,8 +4,12 @@ from watdo.database import Database
 from watdo.environ import DISCORD_TOKEN
 from watdo._main_runner import async_main_runner
 
+bot: Bot
+
 
 async def async_main(loop: asyncio.AbstractEventLoop) -> int:
+    global bot
+
     db = Database()
     bot = Bot(loop=loop, database=db)
 
