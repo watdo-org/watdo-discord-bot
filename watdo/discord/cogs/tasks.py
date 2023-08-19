@@ -113,7 +113,7 @@ class Tasks(BaseCog):
         tasks.sort(key=lambda t: t.last_done.value if t.last_done else math.inf)
         await self._send_tasks(ctx, tasks, as_text=as_text)
 
-    def _parse_due(self, due: str, utc_offset: float) -> DueT:
+    def _parse_due(self, ctx: dc.Context[Bot], due: str, utc_offset: float) -> DueT:
         rr: Optional[str | dt.datetime] = recurrent.parse(
             due,
             now=dt.date_now(utc_offset),
@@ -130,6 +130,7 @@ class Tasks(BaseCog):
         if isinstance(rr, dt.datetime_type):
             return rr.timestamp()  # type: ignore[return-value]
 
+        self.bot.loop.create_task(ctx.send(f"Failed to parse `{due}`"))
         raise CancelCommand()
 
     async def _update_task(
@@ -184,7 +185,7 @@ class Tasks(BaseCog):
                 title=title,
                 category=category,
                 is_important=is_important,
-                due=self._parse_due(due, profile.utc_offset.value),
+                due=self._parse_due(ctx, due, profile.utc_offset.value),
                 description=description,
                 has_reminder=has_reminder,
                 is_auto_done=is_auto_done,
@@ -240,7 +241,7 @@ class Tasks(BaseCog):
                 title=title,
                 category=category,
                 is_important=is_important,
-                due=self._parse_due(due, profile.utc_offset.value),
+                due=self._parse_due(ctx, due, profile.utc_offset.value),
                 description=description,
                 has_reminder=has_reminder,
                 is_auto_done=is_auto_done,
