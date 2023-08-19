@@ -65,6 +65,16 @@ class Bot(dc.Bot):
 
         await super().start(token, reconnect=reconnect)
 
+    async def process_shortcut_commands(self, message: discord.Message) -> None:
+        command = await self.db.get_command_shortcut(
+            str(message.author.id),
+            message.content,
+        )
+
+        if command is not None:
+            message.content = command
+            await self.process_commands(message)
+
     async def on_message(self, message: discord.Message) -> None:
         try:
             bot_user = cast(discord.User, self.user)
@@ -73,7 +83,7 @@ class Bot(dc.Bot):
                 return
 
             if not message.content.startswith(str(self.command_prefix)):
-                # self.loop.create_task(self.process_shortcut_commands(message))
+                self.loop.create_task(self.process_shortcut_commands(message))
 
                 if bot_user.mention in message.content.replace("<@!", "<@"):
                     await message.reply(f"Type `{self.command_prefix}help` for help.")

@@ -56,3 +56,15 @@ class Database:
     async def hdel(self, name: str, *keys: str) -> int:
         deleted_count = await self._conn.hdel(name, *keys)
         return deleted_count
+
+    async def get_command_shortcut(self, user_id: str, name: str) -> Optional[str]:
+        return await self.hget(f"shortcuts:user.{user_id}", name)
+
+    async def get_all_command_shortcuts(self, user_id: str) -> Dict[str, str]:
+        return await self.hgetall(f"shortcuts:user.{user_id}")
+
+    async def set_command_shortcut(self, user_id: str, name: str, command: str) -> None:
+        await self.hset(f"shortcuts:user.{user_id}", key=name, value=command)
+
+    async def delete_command_shortcut(self, user_id: str, name: str) -> int:
+        return await self.hdel(f"shortcuts:user.{user_id}", name)
