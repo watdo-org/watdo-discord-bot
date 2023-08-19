@@ -15,7 +15,7 @@ from typing import (
 )
 import discord
 from discord.ext import commands as dc
-from watdo.models import Profile
+from watdo.models import Profile, Task, ScheduledTask
 from watdo.errors import CancelCommand
 from watdo.database import Database
 from watdo.safe_data import UTCOffset
@@ -36,6 +36,33 @@ class BaseCog(dc.Cog):
     def __init__(self, bot: "Bot", database: Database) -> None:
         self.bot = bot
         self.db = database
+
+    @staticmethod
+    def tasks_to_text(tasks: List[Task], *, no_category: bool = False) -> str:
+        res = []
+
+        for i, t in enumerate(tasks):
+            task_type = "📝"
+            status = ""
+
+            if isinstance(t, ScheduledTask):
+                if t.is_recurring:
+                    task_type = "🔁" if t.has_reminder.value else "🔁 🔕"
+                elif t.due_date:
+                    task_type = "🔔" if t.has_reminder.value else "🔕"
+
+            if t.is_done:
+                status = "✅ "
+            elif isinstance(t, ScheduledTask) and t.is_overdue:
+                status = "⚠️ "
+
+            p = (
+                f"{status}{'📌 ' if t.is_important.value else ''}"
+                f'{task_type}{"" if no_category else f" [{t.category.value}]"}'
+            )
+            res.append(f"{i + 1}. {p} {t.title.value}")
+
+        return "\n".join(res)
 
     @staticmethod
     def parse_params_list(
