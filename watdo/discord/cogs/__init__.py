@@ -253,6 +253,7 @@ class BaseCog(dc.Cog):
                 uuid=uuid4().hex,
                 created_at=time.time(),
                 created_by=ctx.author.id,
+                channel_id=ctx.channel.id,
             )
             self.bot.loop.create_task(profile.save())
             self.bot.loop.create_task(profile.add_channel(ctx.channel.id))

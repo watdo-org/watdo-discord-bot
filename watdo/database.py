@@ -1,10 +1,14 @@
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, AsyncIterator
 from redis.asyncio import Redis
 from watdo.environ import REDIS_URL
 
 
 class Database:
     _conn = Redis.from_url(REDIS_URL)
+
+    async def iter_keys(self, match: str) -> AsyncIterator[str]:
+        async for key in self._conn.scan_iter(match=match):
+            yield key.decode()
 
     async def get(self, key: str) -> Optional[str]:
         data = await self._conn.get(key)

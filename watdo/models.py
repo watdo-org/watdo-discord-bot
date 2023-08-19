@@ -1,4 +1,5 @@
 import json
+import time
 from abc import ABC, abstractmethod
 from typing import cast, Optional, Dict, Any, TypeVar, Generic, List
 from dateutil import rrule
@@ -31,11 +32,13 @@ class Model(ABC):
         uuid: str,
         created_at: float,
         created_by: int,
+        channel_id: int,
     ) -> None:
         self._database = database
         self.uuid = UUID(uuid)
         self.created_at = Timestamp(created_at)
         self.created_by = SnowflakeID(created_by)
+        self.channel_id = SnowflakeID(channel_id)
 
         for key, value in self.__dict__.items():
             if key.startswith("_"):
@@ -103,10 +106,16 @@ class Profile(Model):
         uuid: str,
         created_at: float,
         created_by: int,
+        channel_id: int,
     ) -> None:
         self.utc_offset = UTCOffset(utc_offset)
+
         super().__init__(
-            database, uuid=uuid, created_at=created_at, created_by=created_by
+            database,
+            uuid=uuid,
+            created_at=created_at,
+            created_by=created_by,
+            channel_id=channel_id,
         )
 
     async def save(self) -> None:
@@ -162,6 +171,7 @@ class Task(Model):
         uuid: str,
         created_at: float,
         created_by: int,
+        channel_id: int,
     ) -> None:
         self._profile = profile
         self.title = TaskTitle(title)
@@ -172,7 +182,11 @@ class Task(Model):
         self.profile_id = UUID(profile_id)
 
         super().__init__(
-            database, uuid=uuid, created_at=created_at, created_by=created_by
+            database,
+            uuid=uuid,
+            created_at=created_at,
+            created_by=created_by,
+            channel_id=channel_id,
         )
 
     @property
@@ -207,6 +221,19 @@ class Task(Model):
         else:
             await self.db.lpush(f"tasks:profile.{profile_id}", self.as_json_str())
 
+    async def delete(self) -> None:
+        profile_id = self._profile.uuid.value
+        data = self.as_json_str()
+        await self.db.lrem(f"tasks:profile.{profile_id}", data)
+
+    async def done(self) -> None:
+        self.last_done = Timestamp(time.time())
+
+        await self.save()
+
+        if isinstance(self, ScheduledTask) and not self.is_recurring:
+            await self.delete()
+
 
 class ScheduledTask(Task, Generic[DueT]):
     def __init__(
@@ -227,6 +254,7 @@ class ScheduledTask(Task, Generic[DueT]):
         uuid: str,
         created_at: float,
         created_by: int,
+        channel_id: int,
     ) -> None:
         self.due: RRuleString | Timestamp
         self.has_reminder = Boolean(has_reminder)
@@ -257,6 +285,7 @@ class ScheduledTask(Task, Generic[DueT]):
             uuid=uuid,
             created_at=created_at,
             created_by=created_by,
+            channel_id=channel_id,
         )
 
     @property

@@ -7,7 +7,7 @@ from watdo.discord.embeds import Embed
 
 
 class Tasks(BaseCog):
-    @dc.hybrid_command()
+    @dc.hybrid_command()  # type: ignore[arg-type]
     async def summary(self, ctx: dc.Context[Bot]) -> None:
         """Show the summary of all your tasks."""
         profile = await self.get_profile(ctx)

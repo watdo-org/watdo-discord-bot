@@ -9,6 +9,7 @@ from watdo import dt
 from watdo.errors import CancelCommand
 from watdo.environ import IS_DEV, SYNC_SLASH_COMMANDS
 from watdo.logging import get_logger
+from watdo.reminder import Reminder
 from watdo.database import Database
 from watdo.discord.cogs import BaseCog
 from watdo.discord.embeds import ErrorEmbed
@@ -86,19 +87,22 @@ class Bot(dc.Bot):
     async def _on_ready_event(self) -> None:
         logger = get_logger("Bot.on_ready")
         logger.info("watdo is ready!!")
+
+        Reminder(self.loop, self.db, self).start()
+
         logger.debug(f"Timezone: {dt.local_tz()}")
-        logger.debug("Syncing slash commands...")
 
-        if not SYNC_SLASH_COMMANDS:
-            synced_commands = []
-        elif IS_DEV:
-            dev_server = cast(discord.Guild, self.get_guild(975234089353351178))
-            self.tree.copy_global_to(guild=dev_server)
-            synced_commands = await self.tree.sync(guild=dev_server)
-        else:
-            synced_commands = await self.tree.sync()
+        if SYNC_SLASH_COMMANDS:
+            logger.debug("Syncing slash commands...")
 
-        logger.debug(f"Synced {len(synced_commands)} slash command(s)")
+            if IS_DEV:
+                dev_server = cast(discord.Guild, self.get_guild(975234089353351178))
+                self.tree.copy_global_to(guild=dev_server)
+                synced_commands = await self.tree.sync(guild=dev_server)
+            else:
+                synced_commands = await self.tree.sync()
+
+            logger.debug(f"Synced {len(synced_commands)} slash command(s)")
 
     async def _on_command_error_event(
         self, ctx: dc.Context["Bot"], error: dc.CommandError
