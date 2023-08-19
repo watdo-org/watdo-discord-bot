@@ -125,7 +125,7 @@ class Tasks(BaseCog):
         )
 
         if date is not None:
-            return date.timestamp()
+            return date.timestamp()  # type: ignore[return-value]
 
         rr: Optional[str | dt.datetime] = recurrent.parse(
             due,

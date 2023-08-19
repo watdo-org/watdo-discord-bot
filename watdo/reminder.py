@@ -25,10 +25,12 @@ class Reminder:
     async def remind(self, task: ScheduledTask[str] | ScheduledTask[float]) -> None:
         if not task.is_done and task.has_reminder.value:
             channel_id = task.channel_id.value
-            channel: Any = self.bot.get_channel(channel_id) or self.bot.get_user(
-                channel_id
-            )
             user = self.bot.get_user(task.created_by.value)
+            channel: Any = (
+                self.bot.get_channel(channel_id)
+                or self.bot.get_user(channel_id)
+                or user
+            )
 
             if channel is None:
                 return
