@@ -235,7 +235,7 @@ class BaseCog(dc.Cog):
                     await ctx.send("You don't own that profile ❌")
                     raise CancelCommand()
 
-                await profile.add_channel(self.db, ctx.channel.id)
+                await profile.add_channel(ctx.channel.id)
                 await ctx.send(f"Channel added to profile `{profile_id}` ✅")
                 return await self.get_profile(ctx)
 
@@ -248,13 +248,14 @@ class BaseCog(dc.Cog):
                 )
             )[0]
             profile = Profile(
+                self.db,
                 utc_offset=utc_offset,
                 uuid=uuid4().hex,
                 created_at=time.time(),
                 created_by=ctx.author.id,
             )
-            self.bot.loop.create_task(profile.save(self.db))
-            self.bot.loop.create_task(profile.add_channel(self.db, ctx.channel.id))
+            self.bot.loop.create_task(profile.save())
+            self.bot.loop.create_task(profile.add_channel(ctx.channel.id))
             await ctx.send(
                 "New profile created ✅", embed=ProfileEmbed(self.bot, profile)
             )

@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, cast, Any, Tuple
 import discord
 from discord.ext import commands as dc
 from watdo import dt
-from watdo.models import Profile, Task
+from watdo.models import Profile, Task, ScheduledTask
 
 if TYPE_CHECKING:
     from watdo.discord import Bot
@@ -67,7 +67,7 @@ class TaskEmbed(Embed):
                 "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3b/"
                 "Eo_circle_green_checkmark.svg/800px-Eo_circle_green_checkmark.svg.png"
             )
-        elif task.is_overdue:
+        elif isinstance(task, ScheduledTask) and task.is_overdue:
             color = discord.Colour.from_rgb(255, 192, 72)
             icon_url = "https://cdn-icons-png.flaticon.com/512/6897/6897039.png"
         else:
@@ -84,10 +84,11 @@ class TaskEmbed(Embed):
         super().__init__(bot, task.title.value, color=color, description=description)
         author = "📝"
 
-        if task.is_recurring:
-            author = "🔁" if task.has_reminder.value else "🔁 🔕"
-        elif task.due_date:
-            author = "🔔" if task.has_reminder.value else "🔕"
+        if isinstance(task, ScheduledTask):
+            if task.is_recurring:
+                author = "🔁" if task.has_reminder.value else "🔁 🔕"
+            elif task.due_date:
+                author = "🔔" if task.has_reminder.value else "🔕"
 
         self.set_author(
             name=f"{'📌 ' if task.is_important.value else ''}"
@@ -97,14 +98,14 @@ class TaskEmbed(Embed):
 
         date_format = "%b %d, %Y\n%I:%M %p"
 
-        if task.due_date is not None:
+        if isinstance(task, ScheduledTask):
             self.add_field(
                 name="Due Date",
                 value=f"{task.due_date.strftime(date_format)}",
             )
 
-        if task.is_recurring:
-            self.set_footer(text=task.rrulestr)
+            if task.is_recurring:
+                self.set_footer(text=task.rrulestr)
 
         self.add_field(
             name="Created",

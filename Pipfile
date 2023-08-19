@@ -16,6 +16,7 @@ uvloop = {version = "*", sys_platform = "== 'linux'"}
 charset-normalizer = "*"
 redis = "*"
 recurrent = "*"
+python-dateutil = "*"
 
 [dev-packages]
 mypy = "*"
