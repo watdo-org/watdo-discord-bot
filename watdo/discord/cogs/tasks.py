@@ -360,14 +360,19 @@ class Tasks(BaseCog):
     @dc.hybrid_command()  # type: ignore[arg-type]
     async def done(self, ctx: dc.Context[Bot], title: str) -> None:
         """Mark a task as done. If the task is not a recurring task, it will get removed."""
-        message, task = await self._confirm_task_action(ctx, title)
+        profile = await self.get_profile(ctx)
+        task = await Task.from_title(self.db, profile, title=title)
 
-        if (message is not None) and (task is not None):
+        if task is None:
+            await ctx.send(f'Task "{title}" not found ❌')
+            return
+
+        try:
             await task.done()
-            await message.edit(
-                content="Done ✅",
-                embed=TaskEmbed(self.bot, task),
-            )
+        except ValueError as error:
+            await ctx.send(str(error))
+        else:
+            await ctx.send(embed=TaskEmbed(self.bot, task))
 
     @dc.hybrid_command()  # type: ignore[arg-type]
     async def cancel(self, ctx: dc.Context[Bot], title: str) -> None:

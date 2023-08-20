@@ -241,6 +241,9 @@ class Task(Model):
         await self.db.lrem(f"tasks:profile.{profile_id}", data)
 
     async def done(self) -> None:
+        if self.is_done:
+            raise ValueError(f'"{self.title.value}" is already done.')
+
         self.last_done = Timestamp(time.time())
 
         await self.save()
