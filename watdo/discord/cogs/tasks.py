@@ -172,7 +172,7 @@ class Tasks(BaseCog):
                 uuid=existing_task.uuid.value,
                 created_at=existing_task.created_at.value,
                 created_by=existing_task.created_by.value,
-                channel_id=existing_task.channel_id.value,
+                channel_id=ctx.channel.id,
                 #
                 # From user input
                 title=title,
@@ -192,7 +192,7 @@ class Tasks(BaseCog):
                 uuid=existing_task.uuid.value,
                 created_at=existing_task.created_at.value,
                 created_by=existing_task.created_by.value,
-                channel_id=existing_task.channel_id.value,
+                channel_id=ctx.channel.id,
                 #
                 # From user input
                 title=title,
