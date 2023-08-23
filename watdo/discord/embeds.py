@@ -108,17 +108,22 @@ class TaskEmbed(Embed):
                 if task.is_recurring:
                     self.set_footer(text=task.rrulestr)
 
-            self.add_field(
-                name="Created",
-                value=f"{task.date_created.strftime(date_format)}",
-            )
-
             if task.last_done is not None:
                 last_done_date = cast(dt.datetime, task.last_done_date)
                 self.add_field(
                     name="Last Done",
                     value=f"{last_done_date.strftime(date_format)}",
                 )
+
+            self.add_field(
+                name="Created At",
+                value=f"{task.date_created.strftime(date_format)}",
+            )
+
+            created_by = bot.get_user(task.created_by.value)
+
+            if created_by is not None:
+                self.add_field(name="Created By", value=created_by.mention)
 
 
 class PagedEmbed:
