@@ -5,6 +5,7 @@ from watdo import dt
 from watdo.models import Profile, Task, ScheduledTask
 from watdo.database import Database
 from watdo.safe_data import Timestamp
+from watdo.discord.cogs import BaseCog
 from watdo.discord.embeds import TaskEmbed
 
 if TYPE_CHECKING:
@@ -38,10 +39,7 @@ class Reminder:
             content = f"⏰ **Reminder** {'@here' if user is None else user.mention}"
             embed = TaskEmbed(self.bot, task)
 
-            try:
-                await channel.send(content, embed=embed)
-            except discord.HTTPException:
-                pass
+            await BaseCog.send(channel, content, embed=embed)
 
     async def _update_task(
         self,

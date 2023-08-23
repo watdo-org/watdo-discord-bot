@@ -199,8 +199,11 @@ class PagedEmbed:
             self._process_reaction(str(reaction))
 
     async def send(self) -> discord.Message:
-        self.message = await self.ctx.send(
-            embeds=self.embeds[self.current_page : self.embeds_len]
+        from watdo.discord.cogs import BaseCog
+
+        self.message = await BaseCog.send(
+            self.ctx,
+            embeds=self.embeds[self.current_page : self.embeds_len],
         )
 
         for emoji in self._controls.values():

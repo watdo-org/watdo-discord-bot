@@ -86,7 +86,9 @@ class Bot(dc.Bot):
                 self.loop.create_task(self.process_shortcut_commands(message))
 
                 if bot_user.mention in message.content.replace("<@!", "<@"):
-                    await message.reply(f"Type `{self.command_prefix}help` for help.")
+                    await BaseCog.send(
+                        message.channel, f"Type `{self.command_prefix}help` for help."
+                    )
 
             else:
                 await self.process_commands(message)
@@ -119,14 +121,14 @@ class Bot(dc.Bot):
     ) -> None:
         if isinstance(error, dc.MissingRequiredArgument) and ctx.command is not None:
             params = BaseCog.parse_params(ctx.command)
-            await ctx.send(f"{ctx.prefix}{ctx.invoked_with} {params}")
+            await BaseCog.send(ctx, f"{ctx.prefix}{ctx.invoked_with} {params}")
         elif isinstance(error, dc.CommandNotFound):
-            await ctx.send(f'No command "{ctx.invoked_with}" ❌')
+            await BaseCog.send(ctx, f'No command "{ctx.invoked_with}" ❌')
         elif isinstance(error, CancelCommand):
             pass
         else:
-            await ctx.send(f"**{type(error).__name__}:** {error}")
+            await BaseCog.send(ctx, f"**{type(error).__name__}:** {error}")
 
     def log(self, record: logging.LogRecord) -> None:
         channel = cast(discord.TextChannel, self.get_channel(1086519345972260894))
-        self.loop.create_task(channel.send(embed=ErrorEmbed(record)))
+        self.loop.create_task(BaseCog.send(channel, embed=ErrorEmbed(record)))

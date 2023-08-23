@@ -38,6 +38,18 @@ class BaseCog(dc.Cog):
         self.db = database
 
     @staticmethod
+    async def send(
+        messageable: discord.abc.Messageable,
+        content: Any = None,
+        *args: Any,
+        **kwargs: Any,
+    ) -> discord.Message:
+        if content is None:
+            return await messageable.send(*args, **kwargs)
+
+        return await messageable.send(str(content)[:2000], *args, **kwargs)
+
+    @staticmethod
     def tasks_to_text(tasks: List[Task], *, no_category: bool = False) -> str:
         res = []
 
@@ -233,7 +245,7 @@ class BaseCog(dc.Cog):
 
         answers = []
         keys = list(questions.keys())
-        bot_msg = await ctx.reply(keys[0])
+        bot_msg = await self.send(ctx, keys[0])
 
         for index, question in enumerate(keys):
             if index != 0:
@@ -250,9 +262,10 @@ class BaseCog(dc.Cog):
         try:
             return UTCOffset(float(message.content)).value
         except Exception:
-            await message.reply(
+            await self.send(
+                message.channel,
                 "Please only send a number between -24 and 24.\n"
-                "Example: `8` for UTC+8."
+                "Example: `8` for UTC+8.",
             )
             return None
 
@@ -260,8 +273,8 @@ class BaseCog(dc.Cog):
         profile = await Profile.from_channel_id(self.db, ctx.channel.id)
 
         if profile is None:
-            message = await ctx.send(
-                "Current channel has no profile. What would you like to do?"
+            message = await BaseCog.send(
+                ctx, "Current channel has no profile. What would you like to do?"
             )
             reaction = await self.wait_for_choice(
                 ctx,
@@ -283,15 +296,15 @@ class BaseCog(dc.Cog):
                 profile = await Profile.from_id(self.db, profile_id)
 
                 if profile is None:
-                    await ctx.send("Profile not found ❌")
+                    await BaseCog.send(ctx, "Profile not found ❌")
                     raise CancelCommand()
 
                 if profile.created_by.value != ctx.author.id:
-                    await ctx.send("You don't own that profile ❌")
+                    await BaseCog.send(ctx, "You don't own that profile ❌")
                     raise CancelCommand()
 
                 await profile.add_channel(ctx.channel.id)
-                await ctx.send(f"Channel added to profile `{profile_id}` ✅")
+                await BaseCog.send(ctx, f"Channel added to profile `{profile_id}` ✅")
                 return await self.get_profile(ctx)
 
             utc_offset = (
@@ -312,8 +325,8 @@ class BaseCog(dc.Cog):
             )
             self.bot.loop.create_task(profile.save())
             self.bot.loop.create_task(profile.add_channel(ctx.channel.id))
-            await ctx.send(
-                "New profile created ✅", embed=ProfileEmbed(self.bot, profile)
+            await BaseCog.send(
+                ctx, "New profile created ✅", embed=ProfileEmbed(self.bot, profile)
             )
 
         return profile

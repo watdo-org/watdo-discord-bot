@@ -11,7 +11,7 @@ class Miscellaneous(BaseCog):
         command = self.bot.get_command(command_name)
 
         if command is None:
-            await ctx.send(f'Command "{command_name}" not found ❌')
+            await BaseCog.send(ctx, f'Command "{command_name}" not found ❌')
             return
 
         embed.description = (
@@ -26,7 +26,7 @@ class Miscellaneous(BaseCog):
                 inline=False,
             )
 
-        await ctx.send(embed=embed)
+        await BaseCog.send(ctx, embed=embed)
 
     @dc.hybrid_command()  # type: ignore[arg-type]
     async def help(self, ctx: dc.Context[Bot], command: Optional[str] = None) -> None:
@@ -62,12 +62,12 @@ class Miscellaneous(BaseCog):
                 + "\n\n".join(cmds),
             )
 
-        await ctx.send(embed=embed)
+        await BaseCog.send(ctx, embed=embed)
 
     @dc.hybrid_command()  # type: ignore[arg-type]
     async def ping(self, ctx: dc.Context[Bot]) -> None:
         """Show the server latency."""
-        await ctx.send(f"Pong! **{round(self.bot.latency * 1000)}ms**")
+        await BaseCog.send(ctx, f"Pong! **{round(self.bot.latency * 1000)}ms**")
 
 
 async def setup(bot: Bot) -> None:

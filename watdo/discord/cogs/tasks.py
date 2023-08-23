@@ -74,7 +74,7 @@ class Tasks(BaseCog):
                 name="Categories", value=f"```\n{c[:1000]}\n```", inline=False
             )
 
-        await ctx.send(embed=embed)
+        await BaseCog.send(ctx, embed=embed)
 
     async def _send_tasks(
         self,
@@ -85,11 +85,11 @@ class Tasks(BaseCog):
         is_simple: bool = False,
     ) -> None:
         if not tasks:
-            await ctx.send("No tasks.")
+            await BaseCog.send(ctx, "No tasks.")
             return
 
         if as_text:
-            await ctx.send(self.tasks_to_text(tasks)[:2000])
+            await BaseCog.send(ctx, self.tasks_to_text(tasks))
             return
 
         paged_embed = PagedEmbed(
@@ -148,7 +148,7 @@ class Tasks(BaseCog):
         if isinstance(rr, dt.datetime_type):
             return rr.timestamp()  # type: ignore[return-value]
 
-        self.bot.loop.create_task(ctx.send(f"Failed to parse `{due}`"))
+        self.bot.loop.create_task(BaseCog.send(ctx, f"Failed to parse `{due}`"))
         raise CancelCommand()
 
     async def _update_task(
@@ -212,7 +212,7 @@ class Tasks(BaseCog):
             task.next_reminder = Timestamp(task.due_date.timestamp())
 
         await task.save()
-        await ctx.send("Task updated ✅", embed=TaskEmbed(self.bot, task))
+        await BaseCog.send(ctx, "Task updated ✅", embed=TaskEmbed(self.bot, task))
 
     async def _add_task(
         self,
@@ -268,7 +268,7 @@ class Tasks(BaseCog):
             task.next_reminder = Timestamp(task.due_date.timestamp())
 
         await task.save()
-        await ctx.send("Task added ✅", embed=TaskEmbed(self.bot, task))
+        await BaseCog.send(ctx, "Task added ✅", embed=TaskEmbed(self.bot, task))
 
     @dc.hybrid_command()  # type: ignore[arg-type]
     async def todo(
@@ -348,10 +348,11 @@ class Tasks(BaseCog):
         task = await Task.from_title(self.db, profile, title=title)
 
         if task is None:
-            await ctx.send(f'Task "{title}" not found ❌')
+            await BaseCog.send(ctx, f'Task "{title}" not found ❌')
             return None, None
 
-        message = await ctx.send(
+        message = await BaseCog.send(
+            ctx,
             "Are you sure?",
             embed=TaskEmbed(self.bot, task),
         )
@@ -369,15 +370,15 @@ class Tasks(BaseCog):
         task = await Task.from_title(self.db, profile, title=title)
 
         if task is None:
-            await ctx.send(f'Task "{title}" not found ❌')
+            await BaseCog.send(ctx, f'Task "{title}" not found ❌')
             return
 
         try:
             await task.done()
         except ValueError as error:
-            await ctx.send(str(error))
+            await BaseCog.send(ctx, str(error))
         else:
-            await ctx.send(embed=TaskEmbed(self.bot, task))
+            await BaseCog.send(ctx, embed=TaskEmbed(self.bot, task))
 
     @dc.hybrid_command()  # type: ignore[arg-type]
     async def cancel(self, ctx: dc.Context[Bot], title: str) -> None:

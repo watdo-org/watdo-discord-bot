@@ -28,7 +28,7 @@ class Categories(BaseCog):
                 inline=False,
             )
 
-        await ctx.send(embed=embed)
+        await BaseCog.send(ctx, embed=embed)
 
     @dc.hybrid_command(aliases=["rc"])  # type: ignore[arg-type]
     async def rename_category(
@@ -40,20 +40,22 @@ class Categories(BaseCog):
         tasks = await Task.get_tasks_of_profile(self.db, profile, category=old_name)
 
         if len(tasks) == 0:
-            await ctx.send(f'Category "{old_name}" not found ❌')
+            await BaseCog.send(ctx, f'Category "{old_name}" not found ❌')
             return
 
         for task in tasks:
             task.category.set(new_name)
             self.bot.loop.create_task(task.save())
 
-        await ctx.send(f'Category "{old_name}" has been renamed to "{new_name}" ✅')
+        await BaseCog.send(
+            ctx, f'Category "{old_name}" has been renamed to "{new_name}" ✅'
+        )
 
     async def _delete_category_task(
         self, ctx: dc.Context[Bot], uid: str, task: Task
     ) -> None:
         await task.delete()
-        await ctx.send(f'Task "{task.title.value}" has been removed ✅')
+        await BaseCog.send(ctx, f'Task "{task.title.value}" has been removed ✅')
 
     @dc.hybrid_command(aliases=["dc"])  # type: ignore[arg-type]
     async def delete_category(self, ctx: dc.Context[Bot], name: str) -> None:
@@ -63,7 +65,7 @@ class Categories(BaseCog):
         tasks = await Task.get_tasks_of_profile(self.db, profile, category=name)
 
         if len(tasks) == 0:
-            await ctx.send(f'Category "{name}" not found ❌')
+            await BaseCog.send(ctx, f'Category "{name}" not found ❌')
             return
 
         for task in tasks:
