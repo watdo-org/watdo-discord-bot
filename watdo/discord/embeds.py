@@ -60,7 +60,7 @@ class ProfileEmbed(Embed):
 
 
 class TaskEmbed(Embed):
-    def __init__(self, bot: "Bot", task: Task) -> None:
+    def __init__(self, bot: "Bot", task: Task, *, is_simple: bool = False) -> None:
         if task.is_done:
             color = discord.Colour.from_rgb(65, 161, 69)
             icon_url = (
@@ -96,28 +96,29 @@ class TaskEmbed(Embed):
             icon_url=icon_url,
         )
 
-        date_format = "%b %d, %Y\n%I:%M %p"
+        if not is_simple:
+            date_format = "%b %d, %Y\n%I:%M %p"
 
-        if isinstance(task, ScheduledTask):
+            if isinstance(task, ScheduledTask):
+                self.add_field(
+                    name="Due Date",
+                    value=f"{task.due_date.strftime(date_format)}",
+                )
+
+                if task.is_recurring:
+                    self.set_footer(text=task.rrulestr)
+
             self.add_field(
-                name="Due Date",
-                value=f"{task.due_date.strftime(date_format)}",
+                name="Created",
+                value=f"{task.date_created.strftime(date_format)}",
             )
 
-            if task.is_recurring:
-                self.set_footer(text=task.rrulestr)
-
-        self.add_field(
-            name="Created",
-            value=f"{task.date_created.strftime(date_format)}",
-        )
-
-        if task.last_done is not None:
-            last_done_date = cast(dt.datetime, task.last_done_date)
-            self.add_field(
-                name="Last Done",
-                value=f"{last_done_date.strftime(date_format)}",
-            )
+            if task.last_done is not None:
+                last_done_date = cast(dt.datetime, task.last_done_date)
+                self.add_field(
+                    name="Last Done",
+                    value=f"{last_done_date.strftime(date_format)}",
+                )
 
 
 class PagedEmbed:

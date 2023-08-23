@@ -77,7 +77,12 @@ class Tasks(BaseCog):
         await ctx.send(embed=embed)
 
     async def _send_tasks(
-        self, ctx: dc.Context[Bot], tasks: List[Task], *, as_text: bool
+        self,
+        ctx: dc.Context[Bot],
+        tasks: List[Task],
+        *,
+        as_text: bool,
+        is_simple: bool = False,
     ) -> None:
         if not tasks:
             await ctx.send("No tasks.")
@@ -89,7 +94,7 @@ class Tasks(BaseCog):
 
         paged_embed = PagedEmbed(
             ctx,
-            embeds=tuple(TaskEmbed(self.bot, t) for t in tasks),
+            embeds=tuple(TaskEmbed(self.bot, t, is_simple=is_simple) for t in tasks),
         )
         await paged_embed.send()
 
@@ -334,7 +339,7 @@ class Tasks(BaseCog):
             else math.inf
         )
         tasks.sort(key=lambda t: t.last_done.value if t.last_done else math.inf)
-        await self._send_tasks(ctx, tasks, as_text=as_text)
+        await self._send_tasks(ctx, tasks, as_text=as_text, is_simple=True)
 
     async def _confirm_task_action(
         self, ctx: dc.Context[Bot], title: str
