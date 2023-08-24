@@ -14,7 +14,7 @@
 }
 
 *::-webkit-scrollbar {
-    width: 5px;
+    width: 4px;
 }
 *::-webkit-scrollbar-thumb {
     border-radius: 5px;
@@ -48,12 +48,55 @@ input:focus, textarea:focus {
 }
 
 textarea {
-    height: 200px;
+    height: 150px;
     width: 100%;
 }
 
 input[type="checkbox"] {
     width: auto;
+}
+
+input[type="range"] {
+    padding: 0;
+    width: 14rem;
+}
+
+input[name="Importance"] {
+    position: relative;
+}
+input[name="Importance"]::before {
+    content: "Trivial";
+    position: absolute;
+    top: 15px;
+    font-size: 0.75rem;
+    color: #ed5555;
+}
+input[name="Importance"]::after {
+    content: "Important";
+    position: absolute;
+    top: 15px;
+    right: 0;
+    font-size: 0.75rem;
+    color: #2fa69a;
+}
+
+input[name="Energy"] {
+    position: relative;
+}
+input[name="Energy"]::before {
+    content: "Tiring";
+    position: absolute;
+    top: 15px;
+    font-size: 0.75rem;
+    color: #ed5555;
+}
+input[name="Energy"]::after {
+    content: "Energizing";
+    position: absolute;
+    top: 15px;
+    right: 0;
+    font-size: 0.75rem;
+    color: #2fa69a;
 }
 
 h1 {
@@ -95,6 +138,8 @@ code.error {
     padding: 20px;
     padding-right: 30px;
     flex-grow: 1;
+    overflow-x: hidden;
+    overflow-y: scroll;
 }
 .inputs-section > * {
     display: inline-block;
@@ -106,6 +151,5 @@ code.error {
     width: 50%;
     background-color: var(--bg2);
     padding: 10px 20px 15px 30px;
-    border-left: 5px solid var(--primary);
     overflow: scroll;
 }

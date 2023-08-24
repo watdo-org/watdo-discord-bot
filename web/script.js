@@ -5,7 +5,8 @@ class Command {
         this.inputs = {
             "Title": document.querySelector("input[placeholder='Title']"),
             "Category": document.querySelector("input[placeholder='Category']"),
-            "Is Important": document.querySelector("input[name='Is Important']"),
+            "Importance": document.querySelector("input[name='Importance']"),
+            "Energy": document.querySelector("input[name='Energy']"),
             "Due": document.querySelector("input[placeholder='Due']"),
             "Description": document.querySelector("textarea[placeholder='Description']"),
             "Remind": document.querySelector("input[name='Remind']"),
