@@ -12,6 +12,7 @@ from watdo.safe_data import (
     UUID,
     Timestamp,
     UTCOffset,
+    UnitRange,
     SnowflakeID,
     RRuleString,
     TaskTitle,
@@ -137,6 +138,21 @@ class Task(Model):
         return None
 
     @staticmethod
+    def _fix_data(data: Dict[str, Any]) -> bool:
+        should_save = False
+
+        if data.get("is_important") is not None:
+            del data["is_important"]
+            data["importance"] = 1
+            should_save = True
+
+        if data.get("energy") is None:
+            data["energy"] = 0
+            should_save = True
+
+        return should_save
+
+    @staticmethod
     async def get_tasks_of_profile(
         db: Database,
         profile: Profile,
@@ -151,10 +167,15 @@ class Task(Model):
         for index, raw_data in enumerate(tasks_data):
             data = json.loads(raw_data)
 
+            should_save = Task._fix_data(data)
+
             if data.get("due") is None:
                 task = Task(db, profile=profile, **data)
             else:
                 task = ScheduledTask(db, profile=profile, **data)
+
+            if should_save:
+                await db.lset(f"tasks:profile.{profile_id}", index, task.as_json_str())
 
             if ignore_done and task.is_done:
                 continue
@@ -174,7 +195,8 @@ class Task(Model):
         profile: Profile,
         title: str,
         category: str,
-        is_important: bool,
+        importance: float,
+        energy: float,
         description: Optional[str],
         last_done: Optional[float],
         profile_id: str,
@@ -186,7 +208,8 @@ class Task(Model):
         self._profile = profile
         self.title = TaskTitle(title)
         self.category = TaskCategory(category)
-        self.is_important = Boolean(is_important)
+        self.importance = UnitRange(importance)
+        self.energy = UnitRange(energy)
         self.description = TaskDescription(description) if description else None
         self.last_done = Timestamp(last_done) if last_done else None
         self.profile_id = UUID(profile_id)
@@ -260,7 +283,8 @@ class ScheduledTask(Task, Generic[DueT]):
         profile: Profile,
         title: str,
         category: str,
-        is_important: bool,
+        importance: float,
+        energy: float,
         description: Optional[str],
         last_done: Optional[float],
         profile_id: str,
@@ -295,7 +319,8 @@ class ScheduledTask(Task, Generic[DueT]):
             profile=profile,
             title=title,
             category=category,
-            is_important=is_important,
+            importance=importance,
+            energy=energy,
             description=description,
             last_done=last_done,
             profile_id=profile_id,

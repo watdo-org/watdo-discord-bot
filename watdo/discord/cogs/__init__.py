@@ -69,7 +69,7 @@ class BaseCog(dc.Cog):
                 status = "⚠️ "
 
             p = (
-                f"{status}{'📌 ' if t.is_important.value else ''}"
+                f"{status}{'📌 ' if t.importance.value else ''}"
                 f'{task_type}{"" if no_category else f" [{t.category.value}]"}'
             )
             res.append(f"{i + 1}. {p} {t.title.value}")

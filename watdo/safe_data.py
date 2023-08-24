@@ -102,6 +102,11 @@ class UTCOffset(Number[float]):
     max_val = 24
 
 
+class UnitRange(Number[float]):
+    min_val = -1
+    max_val = 1
+
+
 class RRuleString(String):
     min_len = 7
     max_len = 1000

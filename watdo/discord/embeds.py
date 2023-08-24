@@ -91,7 +91,7 @@ class TaskEmbed(Embed):
                 author = "🔔" if task.has_reminder.value else "🔕"
 
         self.set_author(
-            name=f"{'📌 ' if task.is_important.value else ''}"
+            name=f"{'📌 ' if task.importance.value else ''}"
             f"{author} {task.category.value}",
             icon_url=icon_url,
         )

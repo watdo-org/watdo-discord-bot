@@ -36,7 +36,7 @@ class Tasks(BaseCog):
         for task in tasks:
             total += 1
 
-            if task.is_important.value:
+            if task.importance.value:
                 is_important += 1
 
             if isinstance(task, ScheduledTask):
@@ -110,7 +110,7 @@ class Tasks(BaseCog):
         tasks = await Task.get_tasks_of_profile(
             self.db, profile, category=category or None
         )
-        tasks.sort(key=lambda t: t.is_important.value, reverse=True)
+        tasks.sort(key=lambda t: t.importance.value, reverse=True)
         tasks.sort(
             key=lambda t: t.due_date.timestamp()
             if isinstance(t, ScheduledTask)
@@ -159,7 +159,8 @@ class Tasks(BaseCog):
         *,
         title: str,
         category: str,
-        is_important: bool,
+        importance: float,
+        energy: float,
         due: Optional[str],
         description: Optional[str],
         has_reminder: bool,
@@ -182,7 +183,8 @@ class Tasks(BaseCog):
                 # From user input
                 title=title,
                 category=category,
-                is_important=is_important,
+                importance=importance,
+                energy=energy,
                 description=description,
             )
         else:
@@ -202,7 +204,8 @@ class Tasks(BaseCog):
                 # From user input
                 title=title,
                 category=category,
-                is_important=is_important,
+                importance=importance,
+                energy=energy,
                 due=self._parse_due(ctx, due, profile.utc_offset.value),
                 description=description,
                 has_reminder=has_reminder,
@@ -221,7 +224,8 @@ class Tasks(BaseCog):
         *,
         title: str,
         category: str,
-        is_important: bool,
+        importance: float,
+        energy: float,
         due: Optional[str],
         description: Optional[str],
         has_reminder: bool,
@@ -241,7 +245,8 @@ class Tasks(BaseCog):
                 # From user input
                 title=title,
                 category=category,
-                is_important=is_important,
+                importance=importance,
+                energy=energy,
                 description=description,
             )
         else:
@@ -258,7 +263,8 @@ class Tasks(BaseCog):
                 # From user input
                 title=title,
                 category=category,
-                is_important=is_important,
+                importance=importance,
+                energy=energy,
                 due=self._parse_due(ctx, due, profile.utc_offset.value),
                 description=description,
                 has_reminder=has_reminder,
@@ -276,7 +282,8 @@ class Tasks(BaseCog):
         ctx: dc.Context[Bot],
         title: str,
         category: str,
-        is_important: bool,
+        importance: float,
+        energy: float,
         due: Optional[str] = dc.parameter(
             default=None,
             description='**Examples:**\n"tomorrow at 5PM"\n"every morning"\n"in 3 hours"',
@@ -302,7 +309,8 @@ class Tasks(BaseCog):
                 existing_task,
                 title=title,
                 category=category,
-                is_important=is_important,
+                importance=importance,
+                energy=energy,
                 due=due,
                 description=description,
                 has_reminder=has_reminder,
@@ -314,7 +322,8 @@ class Tasks(BaseCog):
                 profile,
                 title=title,
                 category=category,
-                is_important=is_important,
+                importance=importance,
+                energy=energy,
                 due=due,
                 description=description,
                 has_reminder=has_reminder,
@@ -336,7 +345,7 @@ class Tasks(BaseCog):
             category=category or None,
             ignore_done=True,
         )
-        tasks.sort(key=lambda t: t.is_important.value, reverse=True)
+        tasks.sort(key=lambda t: t.importance.value, reverse=True)
         tasks.sort(
             key=lambda t: t.due_date.timestamp()
             if isinstance(t, ScheduledTask)
