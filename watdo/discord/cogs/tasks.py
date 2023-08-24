@@ -288,6 +288,10 @@ class Tasks(BaseCog):
         """Add a task to do.
         **Use this please: https://nietsuu.github.io/watdo**
         If the title is a duplicate, the old task will be overwritten."""
+
+        if due == "":
+            due = None
+
         profile = await self.get_profile(ctx)
         existing_task = await Task.from_title(self.db, profile, title)
 
