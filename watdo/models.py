@@ -1,7 +1,7 @@
 import json
 import time
 from abc import ABC, abstractmethod
-from typing import cast, Optional, Dict, Any, TypeVar, Generic, List
+from typing import TYPE_CHECKING, cast, Optional, Dict, Any, TypeVar, Generic
 from dateutil import rrule
 import recurrent
 from watdo import dt
@@ -19,6 +19,9 @@ from watdo.safe_data import (
     TaskCategory,
     TaskDescription,
 )
+
+if TYPE_CHECKING:
+    from watdo.collections import TasksCollection
 
 DueT = TypeVar("DueT", str, float)
 
@@ -159,7 +162,9 @@ class Task(Model):
         *,
         category: Optional[str] = None,
         ignore_done: bool = False,
-    ) -> List["Task"]:
+    ) -> "TasksCollection":
+        from watdo.collections import TasksCollection
+
         profile_id = profile.uuid.value
         tasks_data = await db.lrange(f"tasks:profile.{profile_id}")
         tasks = []
@@ -186,7 +191,7 @@ class Task(Model):
 
             tasks.append(task)
 
-        return tasks
+        return TasksCollection(tasks)
 
     def __init__(
         self,
@@ -376,3 +381,10 @@ class ScheduledTask(Task, Generic[DueT]):
             return True
 
         return False
+
+    @property
+    def is_daily(self) -> bool:
+        try:
+            return "daily" in self.rrulestr
+        except AttributeError:
+            return False

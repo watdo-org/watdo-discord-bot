@@ -13,10 +13,10 @@ class Categories(BaseCog):
     async def clist(self, ctx: dc.Context[Bot]) -> None:
         """Show your tasks by category."""
         profile = await self.get_profile(ctx)
-        tasks = await Task.get_tasks_of_profile(self.db, profile)
+        tasks_coll = await Task.get_tasks_of_profile(self.db, profile)
         categories = defaultdict(list)
 
-        for task in tasks:
+        for task in tasks_coll:
             categories[task.category.value].append(task)
 
         embed = Embed(self.bot, "TASKS")

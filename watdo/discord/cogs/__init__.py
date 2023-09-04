@@ -50,7 +50,7 @@ class BaseCog(dc.Cog):
         return await messageable.send(str(content)[:2000], *args, **kwargs)
 
     @staticmethod
-    def tasks_to_text(tasks: List[Task], *, no_category: bool = False) -> str:
+    def tasks_to_text(tasks: Sequence[Task], *, no_category: bool = False) -> str:
         res = []
 
         for i, t in enumerate(tasks):

@@ -1,7 +1,6 @@
-import math
 import time
 from uuid import uuid4
-from typing import Dict, Optional, Tuple, List
+from typing import Dict, Optional, Tuple, Sequence
 import recurrent
 import dateparser
 import discord
@@ -10,6 +9,7 @@ from watdo import dt
 from watdo.errors import CancelCommand
 from watdo.models import Profile, Task, ScheduledTask, DueT
 from watdo.safe_data import Timestamp
+from watdo.collections import TasksCollection
 from watdo.discord import Bot
 from watdo.discord.cogs import BaseCog
 from watdo.discord.embeds import Embed, TaskEmbed, PagedEmbed
@@ -79,7 +79,7 @@ class Tasks(BaseCog):
     async def _send_tasks(
         self,
         ctx: dc.Context[Bot],
-        tasks: List[Task],
+        tasks: Sequence[Task],
         *,
         as_text: bool,
         is_simple: bool = False,
@@ -110,14 +110,8 @@ class Tasks(BaseCog):
         tasks = await Task.get_tasks_of_profile(
             self.db, profile, category=category or None
         )
-        tasks.sort(key=lambda t: t.importance.value, reverse=True)
-        tasks.sort(
-            key=lambda t: t.due_date.timestamp()
-            if isinstance(t, ScheduledTask)
-            else math.inf
-        )
-        tasks.sort(key=lambda t: t.last_done.value if t.last_done else math.inf)
-        await self._send_tasks(ctx, tasks, as_text=as_text)
+        tasks.sort_by_priority()
+        await self._send_tasks(ctx, tasks.items, as_text=as_text)
 
     def _parse_due(self, ctx: dc.Context[Bot], due: str, utc_offset: float) -> DueT:
         tz = dt.utc_offset_to_tz(utc_offset)
@@ -330,6 +324,20 @@ class Tasks(BaseCog):
                 is_auto_done=is_auto_done,
             )
 
+    async def _get_do_tasks(
+        self,
+        ctx: dc.Context[Bot],
+        category: Optional[str] = None,
+    ) -> TasksCollection:
+        profile = await self.get_profile(ctx)
+        tasks = await Task.get_tasks_of_profile(
+            self.db,
+            profile,
+            category=category or None,
+            ignore_done=True,
+        )
+        return tasks
+
     @dc.hybrid_command(aliases=["do"])  # type: ignore[arg-type]
     async def do_priority(
         self,
@@ -338,21 +346,23 @@ class Tasks(BaseCog):
         as_text: bool = False,
     ) -> None:
         """Show priority tasks."""
-        profile = await self.get_profile(ctx)
-        tasks = await Task.get_tasks_of_profile(
-            self.db,
-            profile,
-            category=category or None,
-            ignore_done=True,
+        tasks = await self._get_do_tasks(ctx, category)
+        tasks.sort_by_priority()
+        await self._send_tasks(ctx, tasks.items, as_text=as_text, is_simple=True)
+
+    @dc.hybrid_command(aliases=["dailies"])  # type: ignore[arg-type]
+    async def do_dailies(
+        self,
+        ctx: dc.Context[Bot],
+        category: Optional[str] = None,
+        as_text: bool = False,
+    ) -> None:
+        """Show overdue daily tasks sorted by priority."""
+        tasks = await self._get_do_tasks(ctx, category)
+        tasks.sort_by_priority()
+        await self._send_tasks(
+            ctx, tasks.get_dailies(), as_text=as_text, is_simple=True
         )
-        tasks.sort(key=lambda t: t.importance.value, reverse=True)
-        tasks.sort(
-            key=lambda t: t.due_date.timestamp()
-            if isinstance(t, ScheduledTask)
-            else math.inf
-        )
-        tasks.sort(key=lambda t: t.last_done.value if t.last_done else math.inf)
-        await self._send_tasks(ctx, tasks, as_text=as_text, is_simple=True)
 
     async def _confirm_task_action(
         self, ctx: dc.Context[Bot], title: str
