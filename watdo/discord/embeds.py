@@ -162,7 +162,7 @@ class PagedEmbed:
             else:
                 embed.set_footer(text=f"{page_no} • {embed.footer.text}")
 
-    def _process_reaction(self, reaction: str) -> None:
+    def _process_reaction(self, reaction: str, user: discord.User) -> None:
         embeds = self.embeds
 
         if reaction == self._controls["first"]:
@@ -187,6 +187,14 @@ class PagedEmbed:
         if embeds:
             self.ctx.bot.loop.create_task(self.message.edit(embeds=embeds))
 
+        self.ctx.bot.loop.create_task(
+            self.ctx.bot.remove_reaction(
+                self.message,
+                reaction=reaction,
+                user=user,
+            )
+        )
+
     async def _start_loop(self) -> None:
         def check(reaction: discord.Reaction, user: discord.User) -> bool:
             return (user.id == self.ctx.author.id) and (
@@ -201,7 +209,7 @@ class PagedEmbed:
             except asyncio.TimeoutError:
                 break
 
-            self._process_reaction(str(reaction))
+            self._process_reaction(str(reaction), user)
 
     async def send(self) -> discord.Message:
         from watdo.discord.cogs import BaseCog

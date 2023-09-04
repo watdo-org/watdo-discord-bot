@@ -1,6 +1,5 @@
 import asyncio
 from typing import TYPE_CHECKING, Any
-import discord
 from watdo import dt
 from watdo.models import Profile, Task, ScheduledTask
 from watdo.database import Database

@@ -132,3 +132,15 @@ class Bot(dc.Bot):
     def log(self, record: logging.LogRecord) -> None:
         channel = cast(discord.TextChannel, self.get_channel(1086519345972260894))
         self.loop.create_task(BaseCog.send(channel, embed=ErrorEmbed(record)))
+
+    async def remove_reaction(
+        self,
+        message: discord.Message,
+        *,
+        reaction: str,
+        user: discord.User,
+    ) -> None:
+        try:
+            await message.remove_reaction(reaction, user)
+        except discord.HTTPException:
+            pass
