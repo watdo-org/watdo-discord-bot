@@ -401,7 +401,7 @@ class Tasks(BaseCog):
         except ValueError as error:
             await BaseCog.send(ctx, str(error))
         else:
-            await BaseCog.send(ctx, embed=TaskEmbed(self.bot, task))
+            await BaseCog.send(ctx, embed=TaskEmbed(self.bot, task, is_simple=True))
 
     @dc.hybrid_command()  # type: ignore[arg-type]
     async def cancel(self, ctx: dc.Context[Bot], title: str) -> None:
