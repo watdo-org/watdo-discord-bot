@@ -276,7 +276,10 @@ class Task(Model):
 
         await self.save()
 
-        if isinstance(self, ScheduledTask) and not self.is_recurring:
+        if isinstance(self, ScheduledTask):
+            if not self.is_recurring:
+                await self.delete()
+        else:
             await self.delete()
 
 
