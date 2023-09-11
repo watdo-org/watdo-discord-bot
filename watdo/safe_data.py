@@ -1,5 +1,6 @@
+import codecs
 from abc import ABC, abstractmethod
-from typing import Generic, TypeVar
+from typing import cast, Generic, TypeVar
 from watdo.errors import InvalidData
 
 T = TypeVar("T")
@@ -125,3 +126,9 @@ class TaskCategory(String):
 class TaskDescription(String):
     min_len = 0
     max_len = 4000
+
+    @property
+    def escaped(self) -> str:
+        desc_bytes = bytes(self.value, "utf-8")
+        desc_escaped = codecs.escape_decode(desc_bytes)[0]
+        return cast(bytes, desc_escaped).decode("utf-8").rstrip()

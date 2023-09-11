@@ -389,12 +389,7 @@ class Tasks(BaseCog):
     @dc.hybrid_command()  # type: ignore[arg-type]
     async def done(self, ctx: dc.Context[Bot], title: str) -> None:
         """Mark a task as done. If the task is not a recurring task, it will get removed."""
-        profile = await self.get_profile(ctx)
-        task = await Task.from_title(self.db, profile, title=title)
-
-        if task is None:
-            await BaseCog.send(ctx, f'Task "{title}" not found ❌')
-            return
+        task = await self.task_from_title(ctx, title)
 
         try:
             await task.done()
@@ -414,6 +409,13 @@ class Tasks(BaseCog):
                 content="Cancelled ✅",
                 embed=TaskEmbed(self.bot, task),
             )
+
+    @dc.hybrid_command()  # type: ignore[arg-type]
+    async def showdesc(self, ctx: dc.Context[Bot], title: str) -> None:
+        """Show the description of a task."""
+        task = await self.task_from_title(ctx, title)
+        description = task.description.escaped if task.description else " "
+        await BaseCog.send(ctx, f"```\n{description}\n```")
 
 
 async def setup(bot: Bot) -> None:

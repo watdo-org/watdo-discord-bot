@@ -49,6 +49,16 @@ class BaseCog(dc.Cog):
 
         return await messageable.send(str(content)[:2000], *args, **kwargs)
 
+    async def task_from_title(self, ctx: dc.Context["Bot"], title: str) -> Task:
+        profile = await self.get_profile(ctx)
+        task = await Task.from_title(self.db, profile, title=title)
+
+        if task is None:
+            await self.send(ctx, f'Task "{title}" not found ❌')
+            raise CancelCommand()
+
+        return task
+
     @staticmethod
     def tasks_to_text(tasks: Sequence[Task], *, no_category: bool = False) -> str:
         res = []
