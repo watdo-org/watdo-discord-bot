@@ -1,7 +1,7 @@
 import math
 import logging
 import asyncio
-from typing import TYPE_CHECKING, cast, Any, Tuple
+from typing import TYPE_CHECKING, cast, Any, Tuple, Callable, Awaitable
 import discord
 from discord.ext import commands as dc
 from watdo import dt
@@ -127,13 +127,13 @@ class PagedEmbed:
     def __init__(
         self,
         ctx: dc.Context["Bot"],
+        embeds_getter: Callable[[], Awaitable[Tuple[discord.Embed, ...]]],
         *,
-        embeds: Tuple[discord.Embed, ...],
         timeout: float = 60 * 60,  # 1 hour
         empty_message: str = "No items.",
     ) -> None:
         self.ctx = ctx
-        self.embeds = embeds
+        self.embeds_getter = embeds_getter
         self.timeout = timeout
         self.empty_message = Embed(ctx.bot, empty_message)
 
@@ -141,6 +141,7 @@ class PagedEmbed:
         self.embeds_len = 1
 
         self.message: discord.Message
+        self.embeds: Tuple[discord.Embed, ...]
 
         self._controls = {
             "extract": "✴",
@@ -150,6 +151,8 @@ class PagedEmbed:
             "last": "\u23ed",
         }
 
+    async def update_embeds(self) -> None:
+        self.embeds = await self.embeds_getter()
         self._set_embeds_footer()
 
     def _set_embeds_footer(self) -> None:
@@ -160,6 +163,13 @@ class PagedEmbed:
                 embed.set_footer(text=page_no)
             else:
                 embed.set_footer(text=f"{page_no} • {embed.footer.text}")
+
+    def _get_last_page_index(self) -> int:
+        try:
+            current = (len(self.embeds) - 1) % (len(self.embeds) / self.embeds_len)
+            return math.ceil(current)
+        except ZeroDivisionError:
+            return 0
 
     def _process_reaction(self, reaction: str, user: discord.User) -> None:
         embeds = self.embeds
@@ -175,8 +185,7 @@ class PagedEmbed:
             if self.current_page != len(embeds) - 1:
                 self.current_page += 1
         elif reaction == self._controls["last"]:
-            current = (len(embeds) - 1) % (len(embeds) / self.embeds_len)
-            self.current_page = math.ceil(current)
+            self.current_page = self._get_last_page_index()
         elif reaction == self._controls["extract"]:
             self.embeds_len = 10 if self.embeds_len == 1 else 1
 
@@ -185,9 +194,18 @@ class PagedEmbed:
             + self.embeds_len
         ]
 
-        if embeds:
-            self.ctx.bot.loop.create_task(self.message.edit(embeds=embeds))
+        if len(embeds) == 0:
+            self.current_page = self._get_last_page_index()
+            embeds = embeds[
+                self.current_page
+                * self.embeds_len : self.current_page
+                * self.embeds_len
+                + self.embeds_len
+            ]
 
+        self.ctx.bot.loop.create_task(
+            self.message.edit(embeds=embeds or [self.empty_message])
+        )
         self.ctx.bot.loop.create_task(
             self.ctx.bot.remove_reaction(
                 self.message,
@@ -210,11 +228,13 @@ class PagedEmbed:
             except asyncio.TimeoutError:
                 break
 
+            await self.update_embeds()
             self._process_reaction(str(reaction), user)
 
     async def send(self) -> discord.Message:
         from watdo.discord.cogs import BaseCog
 
+        await self.update_embeds()
         self.message = await BaseCog.send(
             self.ctx,
             embeds=self.embeds[self.current_page : self.embeds_len]

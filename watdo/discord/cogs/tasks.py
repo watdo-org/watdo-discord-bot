@@ -1,6 +1,6 @@
 import time
 from uuid import uuid4
-from typing import Dict, Optional, Tuple, Sequence
+from typing import Dict, Optional, Tuple, Sequence, Callable, Awaitable
 import recurrent
 import dateparser
 import discord
@@ -79,12 +79,20 @@ class Tasks(BaseCog):
     async def _send_tasks(
         self,
         ctx: dc.Context[Bot],
-        tasks: Sequence[Task],
+        tasks_getter: Callable[[], Awaitable[Sequence[Task]]],
         *,
         as_text: bool,
         is_simple: bool = False,
     ) -> None:
+        async def embeds_getter() -> Tuple[discord.Embed, ...]:
+            return tuple(
+                TaskEmbed(self.bot, task, is_simple=is_simple)
+                for task in await tasks_getter()
+            )
+
         if as_text:
+            tasks = await tasks_getter()
+
             if not tasks:
                 await BaseCog.send(ctx, "No tasks.")
                 return
@@ -92,10 +100,7 @@ class Tasks(BaseCog):
             await BaseCog.send(ctx, self.tasks_to_text(tasks))
             return
 
-        paged_embed = PagedEmbed(
-            ctx,
-            embeds=tuple(TaskEmbed(self.bot, t, is_simple=is_simple) for t in tasks),
-        )
+        paged_embed = PagedEmbed(ctx, embeds_getter)
         await paged_embed.send()
 
     @dc.hybrid_command()  # type: ignore[arg-type]
@@ -106,12 +111,16 @@ class Tasks(BaseCog):
         as_text: bool = False,
     ) -> None:
         """Show your tasks list."""
+
+        async def tasks_getter() -> Sequence[Task]:
+            tasks = await Task.get_tasks_of_profile(
+                self.db, profile, category=category or None
+            )
+            tasks.sort_by_priority()
+            return tasks.items
+
         profile = await self.get_profile(ctx)
-        tasks = await Task.get_tasks_of_profile(
-            self.db, profile, category=category or None
-        )
-        tasks.sort_by_priority()
-        await self._send_tasks(ctx, tasks.items, as_text=as_text)
+        await self._send_tasks(ctx, tasks_getter, as_text=as_text)
 
     def _parse_due(self, ctx: dc.Context[Bot], due: str, utc_offset: float) -> DueT:
         tz = dt.utc_offset_to_tz(utc_offset)
@@ -346,9 +355,13 @@ class Tasks(BaseCog):
         as_text: bool = False,
     ) -> None:
         """Show priority tasks."""
-        tasks = await self._get_do_tasks(ctx, category)
-        tasks.sort_by_priority()
-        await self._send_tasks(ctx, tasks.items, as_text=as_text, is_simple=True)
+
+        async def tasks_getter() -> Sequence[Task]:
+            tasks = await self._get_do_tasks(ctx, category)
+            tasks.sort_by_priority()
+            return tasks.items
+
+        await self._send_tasks(ctx, tasks_getter, as_text=as_text, is_simple=True)
 
     @dc.hybrid_command(aliases=["dailies"])  # type: ignore[arg-type]
     async def do_dailies(
@@ -358,11 +371,13 @@ class Tasks(BaseCog):
         as_text: bool = False,
     ) -> None:
         """Show overdue daily tasks sorted by priority."""
-        tasks = await self._get_do_tasks(ctx, category)
-        tasks.sort_by_priority()
-        await self._send_tasks(
-            ctx, tasks.get_dailies(), as_text=as_text, is_simple=True
-        )
+
+        async def tasks_getter() -> Sequence[Task]:
+            tasks = await self._get_do_tasks(ctx, category)
+            tasks.sort_by_priority()
+            return tasks.get_dailies()
+
+        await self._send_tasks(ctx, tasks_getter, as_text=as_text, is_simple=True)
 
     async def _confirm_task_action(
         self, ctx: dc.Context[Bot], title: str
