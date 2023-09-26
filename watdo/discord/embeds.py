@@ -1,5 +1,4 @@
 import math
-import codecs
 import logging
 import asyncio
 from typing import TYPE_CHECKING, cast, Any, Tuple
@@ -131,10 +130,12 @@ class PagedEmbed:
         *,
         embeds: Tuple[discord.Embed, ...],
         timeout: float = 60 * 60,  # 1 hour
+        empty_message: str = "No items.",
     ) -> None:
         self.ctx = ctx
         self.embeds = embeds
         self.timeout = timeout
+        self.empty_message = Embed(ctx.bot, empty_message)
 
         self.current_page = 0
         self.embeds_len = 1
@@ -163,7 +164,9 @@ class PagedEmbed:
     def _process_reaction(self, reaction: str, user: discord.User) -> None:
         embeds = self.embeds
 
-        if reaction == self._controls["first"]:
+        if len(embeds) == 0:
+            pass
+        elif reaction == self._controls["first"]:
             self.current_page = 0
         elif reaction == self._controls["previous"]:
             if self.current_page != 0:
@@ -214,7 +217,8 @@ class PagedEmbed:
 
         self.message = await BaseCog.send(
             self.ctx,
-            embeds=self.embeds[self.current_page : self.embeds_len],
+            embeds=self.embeds[self.current_page : self.embeds_len]
+            or [self.empty_message],
         )
 
         for emoji in self._controls.values():

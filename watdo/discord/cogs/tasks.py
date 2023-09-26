@@ -84,11 +84,11 @@ class Tasks(BaseCog):
         as_text: bool,
         is_simple: bool = False,
     ) -> None:
-        if not tasks:
-            await BaseCog.send(ctx, "No tasks.")
-            return
-
         if as_text:
+            if not tasks:
+                await BaseCog.send(ctx, "No tasks.")
+                return
+
             await BaseCog.send(ctx, self.tasks_to_text(tasks))
             return
 
