@@ -2,7 +2,7 @@ import os
 import glob
 import asyncio
 import logging
-from typing import cast, Any
+from typing import cast, Any, List
 import discord
 from discord.ext import commands as dc
 from watdo import dt
@@ -65,26 +65,38 @@ class Bot(dc.Bot):
 
         await super().start(token, reconnect=reconnect)
 
-    async def process_shortcut_commands(self, message: discord.Message) -> None:
+    async def _process_commands(
+        self, command: List[str], message: discord.Message
+    ) -> None:
+        for c in command:
+            message.content = c
+            await self.on_message(message)
+
+    async def process_command_shortcuts(self, message: discord.Message) -> bool:
         command = await self.db.get_command_shortcut(
             str(message.author.id),
             message.content,
         )
 
-        if command is not None:
-            message.content = command
-            await self.process_commands(message)
+        if command is None:
+            return False
+
+        self.loop.create_task(self._process_commands(command, message))
+        return True
 
     async def on_message(self, message: discord.Message) -> None:
         try:
+            is_command_shortcut = await self.process_command_shortcuts(message)
+
+            if is_command_shortcut:
+                return
+
             bot_user = cast(discord.User, self.user)
 
             if message.author.id == bot_user.id:
                 return
 
             if not message.content.startswith(str(self.command_prefix)):
-                self.loop.create_task(self.process_shortcut_commands(message))
-
                 if bot_user.mention in message.content.replace("<@!", "<@"):
                     await BaseCog.send(
                         message.channel, f"Type `{self.command_prefix}help` for help."

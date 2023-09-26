@@ -57,14 +57,38 @@ class Database:
         deleted_count = await self._conn.hdel(name, *keys)
         return deleted_count
 
-    async def get_command_shortcut(self, user_id: str, name: str) -> Optional[str]:
-        return await self.hget(f"shortcuts:user.{user_id}", name)
+    def _parse_shortcuts(self, command_str: Optional[str]) -> Optional[List[str]]:
+        if command_str is None:
+            return None
 
-    async def get_all_command_shortcuts(self, user_id: str) -> Dict[str, str]:
-        return await self.hgetall(f"shortcuts:user.{user_id}")
+        if len(command_str) == 0:
+            return None
 
-    async def set_command_shortcut(self, user_id: str, name: str, command: str) -> None:
-        await self.hset(f"shortcuts:user.{user_id}", key=name, value=command)
+        return command_str.split("==%SEPARATOR%==")
+
+    async def get_command_shortcut(
+        self, user_id: str, name: str
+    ) -> Optional[List[str]]:
+        res = await self.hget(f"shortcuts:user.{user_id}", name)
+        return self._parse_shortcuts(res)
+
+    async def get_all_command_shortcuts(self, user_id: str) -> Dict[str, List[str]]:
+        res = await self.hgetall(f"shortcuts:user.{user_id}")
+        shortcuts = {}
+
+        for name, command in res.items():
+            shortcuts[name] = self._parse_shortcuts(command) or [" "]
+
+        return shortcuts
+
+    async def set_command_shortcut(
+        self, user_id: str, name: str, command: List[str]
+    ) -> None:
+        await self.hset(
+            f"shortcuts:user.{user_id}",
+            key=name,
+            value="==%SEPARATOR%==".join(command),
+        )
 
     async def delete_command_shortcut(self, user_id: str, name: str) -> int:
         return await self.hdel(f"shortcuts:user.{user_id}", name)

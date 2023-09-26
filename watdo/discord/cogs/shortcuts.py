@@ -1,32 +1,44 @@
-import discord
+from typing import List
 from discord.ext import commands as dc
+from watdo.errors import CancelCommand
 from watdo.discord import Bot
 from watdo.discord.cogs import BaseCog
 
 
 class Shortcuts(BaseCog, description="Speed up your workflow with command shortcuts."):
     @dc.hybrid_command()  # type: ignore[arg-type]
-    async def set_short(
-        self,
-        ctx: dc.Context[Bot],
-        name: str,
-        message: discord.Message,
-    ) -> None:
-        """Set a command shortcut.
-        First, run a command you want to make a shortcut of like:
-        "watdo summary"
-        Then, copy your message link or id.
-        Finally, run `set_short` like this:
-        "watdo set_short sum <paste message id/link here>"
-        Now, whenever you send "sum", "watdo summary" will run."""
-        if not message.content.startswith(str(self.bot.command_prefix)):
-            await BaseCog.send(ctx, f'"{message.content}" is not a command ❌')
-            return
+    async def set_short(self, ctx: dc.Context[Bot], name: str) -> None:
+        """Set a command shortcut."""
+        command: List[str] = []
 
-        await self.db.set_command_shortcut(str(ctx.author.id), name, message.content)
-        await BaseCog.send(
-            ctx, f"Command shortcut set ✅\n```\n{message.content}\n```{name}"
-        )
+        while True:
+            if len(command) == 0:
+                question = (
+                    f"Type in the command to be executed when **{name}** is sent.\n"
+                    "To finish, type **DONE** or **CANCEL**."
+                )
+            else:
+                question = "Another command:"
+
+            inputs = await self.interview(ctx, questions={question: None})
+            inp = inputs[0]
+
+            if inp == "DONE":
+                if len(command) == 0:
+                    await BaseCog.send(ctx, "Please put at least one command.")
+                    continue
+
+                break
+
+            if inp == "CANCEL":
+                raise CancelCommand()
+
+            command.append(inp)
+
+        await self.db.set_command_shortcut(str(ctx.author.id), name, command)
+
+        cs = "".join(f"```\n{c}\n```" for c in command)
+        await BaseCog.send(ctx, f"Command shortcut set ✅\n**{name}**\n{cs}")
 
     @dc.hybrid_command()  # type: ignore[arg-type]
     async def shorts(self, ctx: dc.Context[Bot]) -> None:
@@ -35,9 +47,10 @@ class Shortcuts(BaseCog, description="Speed up your workflow with command shortc
         message = []
 
         for name, command in data.items():
-            message.append(f"```\n{command}\n```{name}\n")
+            cs = "".join(f"```\n{c}\n```" for c in command)
+            message.append(f"**{name}**\n{cs}")
 
-        await BaseCog.send(ctx, "".join(message) or "No command shortcuts ❌")
+        await BaseCog.send(ctx, "\n".join(message) or "No command shortcuts ❌")
 
     @dc.hybrid_command()  # type: ignore[arg-type]
     async def delete_short(self, ctx: dc.Context[Bot], name: str) -> None:
