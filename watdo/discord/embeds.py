@@ -149,6 +149,7 @@ class PagedEmbed:
             "previous": "\u25c0",
             "next": "\u25b6",
             "last": "\u23ed",
+            "refresh": "🔄",
         }
 
     async def update_embeds(self) -> None:
@@ -188,6 +189,8 @@ class PagedEmbed:
             self.current_page = self._get_last_page_index()
         elif reaction == self._controls["extract"]:
             self.embeds_len = 10 if self.embeds_len == 1 else 1
+        elif reaction == self._controls["refresh"]:
+            pass
 
         embeds = embeds[
             self.current_page * self.embeds_len : self.current_page * self.embeds_len
