@@ -68,6 +68,12 @@ class Bot(dc.Bot):
     async def _process_commands(
         self, command: List[str], message: discord.Message
     ) -> None:
+        try:
+            # Remove command the same as the trigger message to avoid infinite loop
+            command.remove(message.content)
+        except ValueError:
+            pass
+
         for c in command:
             message.content = c
             await self.on_message(message)
@@ -86,10 +92,7 @@ class Bot(dc.Bot):
 
     async def on_message(self, message: discord.Message) -> None:
         try:
-            is_command_shortcut = await self.process_command_shortcuts(message)
-
-            if is_command_shortcut:
-                return
+            await self.process_command_shortcuts(message)
 
             bot_user = cast(discord.User, self.user)
 
